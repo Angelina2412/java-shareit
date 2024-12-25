@@ -2,12 +2,9 @@ package ru.practicum.shareit.item;
 
 import jakarta.validation.Valid;
 import org.apache.coyote.BadRequestException;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.user.UserService;
+import ru.practicum.shareit.user.UserServiceImpl;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
@@ -16,43 +13,39 @@ import java.util.List;
 @RequestMapping("/items")
 public class ItemController {
 
-    private final String userId = "X-Sharer-User-Id";
+    private static final String USER_ID_HEADER = "X-Sharer-User-Id";
     private final ItemService itemService;
-    private final UserService userService;
+    private final UserServiceImpl userService;
 
-    public ItemController(ItemService itemService, UserService userService) {
+    public ItemController(ItemService itemService, UserServiceImpl userService) {
         this.itemService = itemService;
         this.userService = userService;
     }
 
     @PostMapping
-    public ResponseEntity<ItemDto> addItem(@Valid @RequestHeader(userId) Long ownerId,
-                                           @Valid @RequestBody ItemDto itemDto) throws BadRequestException {
-        if (!userService.existsById(ownerId)) {
-            throw new NotFoundException("User с ID " + ownerId + " не найден");
-        }
-        return new ResponseEntity<>(itemService.addItem(ownerId, itemDto), HttpStatus.CREATED);
+    public ItemDto addItem(@RequestHeader(USER_ID_HEADER) Long ownerId, @Valid @RequestBody ItemDto itemDto) throws BadRequestException {
+        return itemService.addItem(ownerId, itemDto);
     }
 
     @PatchMapping("/{itemId}")
-    public ResponseEntity<ItemDto> updateItem(@Valid @RequestHeader(userId) Long ownerId,
-                                              @PathVariable Long itemId,
-                                              @RequestBody ItemDto itemDto) throws BadRequestException, AccessDeniedException {
-        return ResponseEntity.ok(itemService.updateItem(ownerId, itemId, itemDto));
+    public ItemDto updateItem(@RequestHeader(USER_ID_HEADER) Long ownerId,
+                              @PathVariable Long itemId,
+                              @RequestBody ItemDto itemDto) throws AccessDeniedException, BadRequestException {
+        return itemService.updateItem(ownerId, itemId, itemDto);
     }
 
     @GetMapping("/{itemId}")
-    public ResponseEntity<ItemDto> getItemById(@PathVariable Long itemId) {
-        return ResponseEntity.ok(itemService.getItemById(itemId));
+    public ItemDto getItemById(@PathVariable Long itemId) {
+        return itemService.getItemById(itemId);
     }
 
     @GetMapping
-    public ResponseEntity<List<ItemDto>> getAllItemsByOwner(@RequestHeader(userId) Long ownerId) {
-        return ResponseEntity.ok(itemService.getAllItemsByOwner(ownerId));
+    public List<ItemDto> getAllItemsByOwner(@RequestHeader(USER_ID_HEADER) Long ownerId) {
+        return itemService.getAllItemsByOwner(ownerId);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<ItemDto>> searchItems(@RequestParam String text) {
-        return ResponseEntity.ok(itemService.searchItems(text));
+    public List<ItemDto> searchItems(@RequestParam String text) {
+        return itemService.searchItems(text);
     }
 }

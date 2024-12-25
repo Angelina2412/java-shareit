@@ -5,7 +5,7 @@ import ru.practicum.shareit.exceptions.BadRequestException;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.UserService;
+import ru.practicum.shareit.user.UserServiceImpl;
 
 import java.nio.file.AccessDeniedException;
 import java.util.ArrayList;
@@ -16,22 +16,22 @@ import java.util.stream.Collectors;
 @Service
 public class ItemServiceImpl implements ItemService {
 
-    private final UserService userService;
+    private final UserServiceImpl userService;
     private final List<Item> items = new ArrayList<>();
     private long idCounter = 1;
 
-    public ItemServiceImpl(UserService userService) {
+    public ItemServiceImpl(UserServiceImpl userService) {
         this.userService = userService;
     }
 
     @Override
     public ItemDto addItem(Long ownerId, ItemDto itemDto) {
         if (!userService.existsById(ownerId)) {
-            throw new NotFoundException("User с ID " + ownerId + " не найден");
+            throw new NotFoundException("Пользователь с ID " + ownerId + " не найден.");
         }
 
         if (itemDto.getAvailable() == null) {
-            throw new BadRequestException("Доступность должна быть указана");
+            throw new BadRequestException("Поле 'доступность' должно быть указано.");
         }
 
         Item item = new Item();
@@ -42,20 +42,18 @@ public class ItemServiceImpl implements ItemService {
         item.setOwnerId(ownerId);
 
         items.add(item);
-
         return toItemDto(item);
     }
-
 
     @Override
     public ItemDto updateItem(Long ownerId, Long itemId, ItemDto itemDto) throws AccessDeniedException {
         Item item = items.stream()
                 .filter(i -> i.getId().equals(itemId))
                 .findFirst()
-                .orElseThrow(() -> new NotFoundException("Item не найден"));
+                .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
 
         if (!item.getOwnerId().equals(ownerId)) {
-            throw new AccessDeniedException("Ты не являешься пользователем этого item");
+            throw new AccessDeniedException("Вы не являетесь владельцем этого Item.");
         }
 
         if (itemDto.getName() != null) {
@@ -71,14 +69,13 @@ public class ItemServiceImpl implements ItemService {
         return toItemDto(item);
     }
 
-
     @Override
     public ItemDto getItemById(Long itemId) {
         return items.stream()
                 .filter(item -> item.getId().equals(itemId))
                 .map(this::toItemDto)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Item nне найден"));
+                .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
     }
 
     @Override

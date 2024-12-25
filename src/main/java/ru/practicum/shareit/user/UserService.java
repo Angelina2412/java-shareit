@@ -1,53 +1,19 @@
 package ru.practicum.shareit.user;
 
-import jakarta.annotation.PostConstruct;
-import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
-@Service
-public class UserService {
+public interface UserService {
+    User addUser(User user);
 
-    private final Map<Long, User> users = new ConcurrentHashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong();
+    User getUserById(Long id);
 
-    @PostConstruct
-    public void init() {
-        users.put(1L, new User(1L, "User1", "user1@example.com"));
-        users.put(2L, new User(2L, "User2", "user2@example.com"));
-        users.put(3L, new User(3L, "User3", "user3@example.com"));
-    }
+    List<User> getAllUsers();
 
-    public void addUser(User user) {
-        if (user.getId() == null) {
-            user.setId(idGenerator.incrementAndGet());
-        }
-        users.put(user.getId(), user);
-    }
+    boolean deleteUser(Long id);
 
-    public User getUserById(Long id) {
-        return users.get(id);
-    }
+    boolean emailExists(String email);
 
-    public List<User> getAllUsers() {
-        return new ArrayList<>(users.values());
-    }
+    boolean existsById(Long id);
 
-    public boolean deleteUser(Long id) {
-        return users.remove(id) != null;
-    }
-
-    public boolean emailExists(String email) {
-        return users.values().stream()
-                .anyMatch(user -> user.getEmail().equalsIgnoreCase(email));
-    }
-
-    public boolean existsById(Long id) {
-        return users.containsKey(id);
-    }
-
+    User updateUser(Long id, User user);
 }

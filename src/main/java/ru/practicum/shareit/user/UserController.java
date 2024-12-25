@@ -4,48 +4,40 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.user.dto.UserDto;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
 @RequestMapping(path = "/users")
 public class UserController {
 
     private final UserService userService;
-    private final AtomicLong idGenerator = new AtomicLong();
 
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
     @PostMapping
-    public ResponseEntity<?> createUser(@Valid @RequestBody User user) {
-        boolean emailExists = userService.getAllUsers().stream()
-                .anyMatch(existingUser -> existingUser.getEmail().equalsIgnoreCase(user.getEmail()));
-        if (emailExists) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("Ошибка", "Такой email уже существует"));
-        }
-
-        user.setId(idGenerator.incrementAndGet());
-        userService.addUser(user);
-        return new ResponseEntity<>(user, HttpStatus.CREATED);
+    public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDto) {
+        User user = userService.addUser(toEntity(userDto));
+        return new ResponseEntity<>(toDto(user), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUser(@PathVariable Long id) {
+    public ResponseEntity<UserDto> getUser(@PathVariable Long id) {
         User user = userService.getUserById(id);
         if (user == null) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(toDto(user));
     }
 
     @GetMapping
-    public List<User> getAllUsers() {
-        return userService.getAllUsers();
+    public List<UserDto> getAllUsers() {
+        return userService.getAllUsers().stream()
+                .map(this::toDto)
+                .toList();
     }
 
     @DeleteMapping("/{id}")
@@ -57,25 +49,18 @@ public class UserController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User userUpdates) {
-        User existingUser = userService.getUserById(id);
-        if (existingUser == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("Ошибка", "User не найден"));
-        }
+    public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody UserDto userUpdates) {
+        User updatedUser = userService.updateUser(id, toEntity(userUpdates));
+        return ResponseEntity.ok(toDto(updatedUser));
+    }
 
-        if (userUpdates.getName() != null) {
-            existingUser.setName(userUpdates.getName());
-        }
-        if (userUpdates.getEmail() != null) {
-            if (userService.emailExists(userUpdates.getEmail()) &&
-                    !existingUser.getEmail().equalsIgnoreCase(userUpdates.getEmail())) {
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(Map.of("Ошибка", "Email уже существует"));
-            }
-            existingUser.setEmail(userUpdates.getEmail());
-        }
+    private User toEntity(UserDto userDto) {
+        return new User(userDto.getId(), userDto.getName(), userDto.getEmail());
+    }
 
-        userService.addUser(existingUser);
-        return ResponseEntity.ok(existingUser);
+    private UserDto toDto(User user) {
+        return new UserDto(user.getId(), user.getName(), user.getEmail());
     }
 }
+
+
