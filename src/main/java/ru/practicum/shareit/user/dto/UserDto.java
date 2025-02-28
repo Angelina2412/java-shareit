@@ -1,11 +1,9 @@
-package ru.practicum.shareit.user;
+package ru.practicum.shareit.user.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 
-@Data
-public class User {
+public class UserDto {
 
     private Long id;
     @NotBlank(message = "Имя пользователя не может быть пустым")
@@ -14,7 +12,10 @@ public class User {
     @Email(message = "Некорректный формат email")
     private String email;
 
-    public User(Long id, String name, String email) {
+    public UserDto() {
+    }
+
+    public UserDto(Long id, String name, String email) {
         this.id = id;
         this.name = name;
         this.email = email;
@@ -44,3 +45,4 @@ public class User {
         this.email = email;
     }
 }
+
