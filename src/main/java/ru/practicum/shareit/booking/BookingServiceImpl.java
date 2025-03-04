@@ -1,6 +1,7 @@
 package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -38,6 +39,20 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalArgumentException("Item с таким id не найден");
         }
 
+        // Проверка: дата начала не может быть в прошлом
+        if (bookingDto.getStart().isBefore(LocalDateTime.now())) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Дата начала бронирования не может быть в прошлом");
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        }
+
+        // Проверка: дата начала не может быть равна дате окончания
+        if (bookingDto.getStart().isEqual(bookingDto.getEnd())) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Дата начала бронирования не может быть равна дате окончания");
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        }
+
         Booking booking = new Booking();
         booking.setItem(item);
         booking.setBooker(booker);
@@ -49,6 +64,8 @@ public class BookingServiceImpl implements BookingService {
 
         return ResponseEntity.ok(toResponse(savedBooking));
     }
+
+
 
 
 
