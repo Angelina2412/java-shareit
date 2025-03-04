@@ -2,6 +2,7 @@ package ru.practicum.shareit.item;
 
 import org.apache.coyote.BadRequestException;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.model.Item;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
@@ -17,4 +18,11 @@ public interface ItemService {
 
     List<ItemDto> searchItems(String text);
 
+    List<ItemDto> getAllItemsWithBookingsByOwner(Long ownerId);
+
+    CommentDto addComment(Long itemId, Long userId, String text) throws AccessDeniedException;
+
+    List<CommentDto> getCommentsByItemId(Long itemId);
+
+    Item getItemEntityById(Long itemId);
 }

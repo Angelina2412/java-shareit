@@ -1,56 +1,65 @@
 package ru.practicum.shareit.item;
 
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.exceptions.BadRequestException;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.UserServiceImpl;
 
 import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class ItemServiceImpl implements ItemService {
 
-    private final UserServiceImpl userService;
-    private final List<Item> items = new ArrayList<>();
-    private long idCounter = 1;
+    private final ItemRepository itemRepository;
+    private final UserRepository userRepository;
 
-    public ItemServiceImpl(UserServiceImpl userService) {
-        this.userService = userService;
+    private final BookingRepository bookingRepository;
+    private final CommentRepository commentRepository;
+
+
+    public ItemServiceImpl(ItemRepository itemRepository, UserRepository userRepository, BookingRepository bookingRepository, CommentRepository commentRepository) {
+        this.itemRepository = itemRepository;
+        this.userRepository = userRepository;
+        this.bookingRepository = bookingRepository;
+        this.commentRepository = commentRepository;
     }
 
     @Override
     public ItemDto addItem(Long ownerId, ItemDto itemDto) {
-        if (!userService.existsById(ownerId)) {
-            throw new NotFoundException("Пользователь с ID " + ownerId + " не найден.");
-        }
+        User user = userRepository.findById(ownerId)
+                                  .orElseThrow(() -> new NotFoundException("Пользователь с ID " + ownerId + " не найден."));
 
         if (itemDto.getAvailable() == null) {
             throw new BadRequestException("Поле 'доступность' должно быть указано.");
         }
 
         Item item = new Item();
-        item.setId(idCounter++);
         item.setName(itemDto.getName());
         item.setDescription(itemDto.getDescription());
         item.setAvailable(itemDto.getAvailable());
         item.setOwnerId(ownerId);
 
-        items.add(item);
+        item = itemRepository.save(item);
         return toItemDto(item);
     }
 
     @Override
     public ItemDto updateItem(Long ownerId, Long itemId, ItemDto itemDto) throws AccessDeniedException {
-        Item item = items.stream()
-                .filter(i -> i.getId().equals(itemId))
-                .findFirst()
-                .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
+        Item item = itemRepository.findById(itemId)
+                                  .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
 
         if (!item.getOwnerId().equals(ownerId)) {
             throw new AccessDeniedException("Вы не являетесь владельцем этого Item.");
@@ -66,24 +75,21 @@ public class ItemServiceImpl implements ItemService {
             item.setAvailable(itemDto.getAvailable());
         }
 
+        item = itemRepository.save(item);
         return toItemDto(item);
     }
 
     @Override
     public ItemDto getItemById(Long itemId) {
-        return items.stream()
-                .filter(item -> item.getId().equals(itemId))
-                .map(this::toItemDto)
-                .findFirst()
-                .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
+        Item item = itemRepository.findById(itemId)
+                                  .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
+        return toItemDto(item);
     }
 
     @Override
     public List<ItemDto> getAllItemsByOwner(Long ownerId) {
-        return items.stream()
-                .filter(item -> item.getOwnerId().equals(ownerId))
-                .map(this::toItemDto)
-                .collect(Collectors.toList());
+        List<Item> items = itemRepository.findByOwnerId(ownerId);
+        return items.stream().map(this::toItemDto).collect(Collectors.toList());
     }
 
     @Override
@@ -91,12 +97,72 @@ public class ItemServiceImpl implements ItemService {
         if (text == null || text.trim().isEmpty()) {
             return Collections.emptyList();
         }
+        List<Item> items = itemRepository.findByNameContainingOrDescriptionContainingAndAvailableTrue(text, text);
+        return items.stream().map(this::toItemDto).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ItemDto> getAllItemsWithBookingsByOwner(Long ownerId) {
+        List<Item> items = itemRepository.findByOwnerId(ownerId);
         return items.stream()
-                .filter(item -> (item.getName().toLowerCase().contains(text.toLowerCase()) ||
-                        item.getDescription().toLowerCase().contains(text.toLowerCase())) &&
-                        item.isAvailable())
-                .map(this::toItemDto)
-                .collect(Collectors.toList());
+                    .map(this::toItemDtoWithBookings)
+                    .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public CommentDto addComment(Long itemId, Long userId, String text) throws AccessDeniedException {
+        Item item = itemRepository.findById(itemId)
+                                  .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
+        User user = userRepository.findById(userId)
+                                  .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден."));
+
+        boolean hasBooked = bookingRepository.existsByItemIdAndBookerIdAndEndBefore(itemId, userId, LocalDateTime.now());
+        if (!hasBooked) {
+            throw new AccessDeniedException("Вы не можете оставить отзыв, если не арендовали эту вещь.");
+        }
+
+        Comment comment = new Comment(item, user, text);
+        comment = commentRepository.save(comment);
+
+        return toCommentDto(comment);
+    }
+
+    @Override
+    public List<CommentDto> getCommentsByItemId(Long itemId) {
+        List<Comment> comments = commentRepository.findByItemId(itemId);
+        return comments.stream().map(this::toCommentDto).collect(Collectors.toList());
+    }
+
+    private CommentDto toCommentDto(Comment comment) {
+        CommentDto dto = new CommentDto();
+        dto.setId(comment.getId());
+        dto.setText(comment.getText());
+        dto.setUserId(comment.getUser().getId());
+        dto.setUserName(comment.getUser().getName());
+        dto.setCreatedDate(comment.getCreatedDate());
+        return dto;
+    }
+
+    private ItemDto toItemDtoWithBookings(Item item) {
+        ItemDto dto = toItemDto(item);
+        List<Booking> bookings = bookingRepository.findAllByItemId(item.getId());
+
+        if (bookings != null && !bookings.isEmpty()) {
+            bookings.sort(Comparator.comparing(Booking::getStart));
+
+            Booking lastBooking = bookings.get(bookings.size() - 1);
+            dto.setLastBookingStartDate(lastBooking.getStart());
+
+            for (Booking booking : bookings) {
+                if (booking.getStart().isAfter(LocalDateTime.now())) {
+                    dto.setNextBookingStartDate(booking.getStart());
+                    break;
+                }
+            }
+        }
+
+        return dto;
     }
 
     private ItemDto toItemDto(Item item) {
@@ -107,4 +173,19 @@ public class ItemServiceImpl implements ItemService {
         dto.setAvailable(item.isAvailable());
         return dto;
     }
+
+    public Item getItemEntityById(Long itemId) {
+        ItemDto itemDto = getItemById(itemId); // Получаем ItemDto
+        return toEntity(itemDto); // Конвертируем в Item
+    }
+
+    private Item toEntity(ItemDto itemDto) {
+        Item item = new Item();
+        item.setId(itemDto.getId());
+        item.setName(itemDto.getName());
+        item.setDescription(itemDto.getDescription());
+        item.setAvailable(itemDto.getAvailable());
+        return item;
+    }
+
 }

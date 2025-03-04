@@ -34,18 +34,39 @@ public class ItemController {
         return itemService.updateItem(ownerId, itemId, itemDto);
     }
 
-    @GetMapping("/{itemId}")
-    public ItemDto getItemById(@PathVariable Long itemId) {
-        return itemService.getItemById(itemId);
-    }
+//    @GetMapping("/{itemId}")
+//    public ItemDto getItemById(@PathVariable Long itemId) {
+//        return itemService.getItemById(itemId);
+//    }
 
     @GetMapping
     public List<ItemDto> getAllItemsByOwner(@RequestHeader(USER_ID_HEADER) Long ownerId) {
-        return itemService.getAllItemsByOwner(ownerId);
+        List<ItemDto> items = itemService.getAllItemsByOwner(ownerId);
+        for (ItemDto itemDto : items) {
+            List<CommentDto> comments = itemService.getCommentsByItemId(itemDto.getId());
+            itemDto.setComments(comments);
+        }
+        return items;
     }
 
     @GetMapping("/search")
     public List<ItemDto> searchItems(@RequestParam String text) {
         return itemService.searchItems(text);
     }
+
+    @PostMapping("/{itemId}/comment")
+    public CommentDto addComment(@RequestHeader(USER_ID_HEADER) Long userId,
+                                 @PathVariable Long itemId,
+                                 @RequestBody String text) throws AccessDeniedException {
+        return itemService.addComment(itemId, userId, text);
+    }
+
+    @GetMapping("/{itemId}")
+    public ItemDto getItemById(@PathVariable Long itemId) {
+        ItemDto itemDto = itemService.getItemById(itemId);
+        List<CommentDto> comments = itemService.getCommentsByItemId(itemId);
+        itemDto.setComments(comments);
+        return itemDto;
+    }
+
 }

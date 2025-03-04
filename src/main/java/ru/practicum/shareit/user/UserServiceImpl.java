@@ -1,5 +1,6 @@
 package ru.practicum.shareit.user;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exceptions.ConflictException;
 import ru.practicum.shareit.exceptions.NotFoundException;
@@ -13,8 +14,12 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class UserServiceImpl implements UserService {
 
-    private final Map<Long, User> users = new ConcurrentHashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong();
+     private final UserRepository userRepository;
+
+    @Autowired
+    public UserServiceImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Override
     public User addUser(User user) {
@@ -22,16 +27,13 @@ public class UserServiceImpl implements UserService {
             throw new ConflictException("Email уже существует");
         }
 
-        if (user.getId() == null) {
-            user.setId(idGenerator.incrementAndGet());
-        }
-        users.put(user.getId(), user);
-        return user;
+        return userRepository.save(user);
     }
 
     @Override
     public User updateUser(Long id, User userUpdates) {
         User existingUser = getUserById(id);
+
         if (existingUser == null) {
             throw new NotFoundException("User с ID " + id + " не найден");
         }
@@ -48,33 +50,37 @@ public class UserServiceImpl implements UserService {
             existingUser.setName(userUpdates.getName());
         }
 
-        users.put(existingUser.getId(), existingUser);
-        return existingUser;
+        return userRepository.save(existingUser);
     }
 
     @Override
     public User getUserById(Long id) {
-        return users.get(id);
+        return userRepository.findById(id)
+                             .orElseThrow(() -> new NotFoundException("User с ID " + id + " не найден"));
     }
 
     @Override
     public List<User> getAllUsers() {
-        return new ArrayList<>(users.values());
+        return userRepository.findAll();
     }
 
     @Override
     public boolean deleteUser(Long id) {
-        return users.remove(id) != null;
+        if (userRepository.existsById(id)) {
+            userRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
     @Override
     public boolean emailExists(String email) {
-        return users.values().stream()
-                .anyMatch(user -> user.getEmail().equalsIgnoreCase(email));
+        return userRepository.findByEmail(email)
+                             .isPresent();
     }
 
     @Override
     public boolean existsById(Long id) {
-        return users.containsKey(id);
+        return userRepository.existsById(id);
     }
 }
