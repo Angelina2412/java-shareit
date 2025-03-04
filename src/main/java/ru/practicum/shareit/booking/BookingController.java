@@ -16,6 +16,7 @@ import ru.practicum.shareit.booking.dto.BookingDto;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/bookings")
@@ -28,10 +29,9 @@ public class BookingController {
     }
 
     @PostMapping
-    public ResponseEntity<BookingDto> createBooking(@Valid @RequestBody BookingDto bookingDto,
-                                                    @RequestHeader("X-Sharer-User-Id") Long userId) {
-        BookingDto createdBooking = bookingService.addBooking(userId, bookingDto);
-        return new ResponseEntity<>(createdBooking, HttpStatus.CREATED);
+    public ResponseEntity<Map<String, Object>> createBooking(@Valid @RequestBody BookingDto bookingDto,
+                                                             @RequestHeader("X-Sharer-User-Id") Long userId) {
+        return bookingService.addBooking(userId, bookingDto);  // Получаем ResponseEntity из сервиса
     }
 
 

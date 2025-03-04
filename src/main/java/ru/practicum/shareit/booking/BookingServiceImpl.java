@@ -1,6 +1,7 @@
 package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.exceptions.NotFoundException;
@@ -12,7 +13,9 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserService;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -23,14 +26,13 @@ public class BookingServiceImpl implements BookingService {
     private final ItemService itemService;
 
     @Override
-    public BookingDto addBooking(Long userId, BookingDto bookingDto) {
+    public ResponseEntity<Map<String, Object>> addBooking(Long userId, BookingDto bookingDto) {
         if (bookingDto.getItemId() == null) {
             throw new IllegalArgumentException("ID объекта Item не может быть null");
         }
 
         User booker = userService.getUserById(userId);
         Item item = itemService.getItemEntityById(bookingDto.getItemId());
-
 
         if (item == null) {
             throw new IllegalArgumentException("Item с таким id не найден");
@@ -43,8 +45,11 @@ public class BookingServiceImpl implements BookingService {
         booking.setEnd(bookingDto.getEnd());
         booking.setStatus(BookingStatus.WAITING);
 
-        return toDto(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+
+        return ResponseEntity.ok(toResponse(savedBooking));
     }
+
 
 
     @Override
@@ -76,10 +81,12 @@ public class BookingServiceImpl implements BookingService {
         return bookings.stream().map(this::toDto).toList();
     }
 
-    private BookingDto toDto(Booking booking) {
+    public BookingDto toDto(Booking booking) {
+        Item item = itemService.getItemEntityById(booking.getItem().getId()); // Берем Item по itemId
+
         return new BookingDto(
                 booking.getId(),
-                booking.getItem().getId(),
+                booking.getItem().getId(), // Оставляем itemId
                 new BookerDto(booking.getBooker().getId()),
                 booking.getStart(),
                 booking.getEnd(),
@@ -107,6 +114,29 @@ public class BookingServiceImpl implements BookingService {
                                        .toList();
             default -> bookings; // "ALL"
         };
+    }
+
+    public Map<String, Object> toResponse(Booking booking) {
+        Item item = itemService.getItemEntityById(booking.getItem().getId()); // Загружаем item
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", booking.getId());
+        response.put("start", booking.getStart());
+        response.put("end", booking.getEnd());
+        response.put("status", booking.getStatus());
+
+        Map<String, Object> itemMap = new HashMap<>();
+        itemMap.put("id", item.getId());
+        itemMap.put("name", item.getName());
+
+        response.put("item", itemMap);
+
+        Map<String, Object> bookerMap = new HashMap<>();
+        bookerMap.put("id", booking.getBooker().getId());
+
+        response.put("booker", bookerMap);
+
+        return response;
     }
 }
 
