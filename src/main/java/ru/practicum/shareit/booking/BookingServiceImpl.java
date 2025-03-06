@@ -13,6 +13,7 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserService;
 
+import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -64,19 +65,40 @@ public class BookingServiceImpl implements BookingService {
 
         return ResponseEntity.ok(toResponse(savedBooking));
     }
-
-
-
-
-
     @Override
-    public BookingDto updateBookingStatus(Long bookingId, Long ownerId, boolean approved) {
+    public ResponseEntity<Map<String, Object>> updateBookingStatus(Long bookingId, Long ownerId, boolean approved)
+            throws AccessDeniedException {
+        // Проверка: BookingId не может быть null
+        if (bookingId == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("message", "ID бронирования не может быть null");
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        }
+
+        // Находим бронирование по ID
         Booking booking = bookingRepository.findById(bookingId)
                                            .orElseThrow(() -> new NotFoundException("Booking not found"));
 
+        // Проверка на права владельца. Статус может изменить только владелец предмета
+        if (!booking.getItem().getOwnerId().equals(ownerId)) {
+            throw new AccessDeniedException("You are not authorized to change the status of this booking");
+        }
+
+        // Проверка: статус может быть изменен только на APPROVED или REJECTED
+        if (approved != true && approved != false) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Статус бронирования должен быть APPROVED или REJECTED");
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        }
+
+        // Обновляем статус бронирования
         booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
-        return toDto(bookingRepository.save(booking));
+        Booking updatedBooking = bookingRepository.save(booking);
+
+        // Возвращаем ответ с полным объектом item
+        return ResponseEntity.ok(toResponse(updatedBooking));
     }
+
 
     @Override
     public BookingDto getBookingById(Long bookingId, Long userId) {

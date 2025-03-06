@@ -12,7 +12,7 @@ public interface BookingService {
 
     ResponseEntity<Map<String, Object>> addBooking(Long userId, BookingDto bookingDto);
 
-    BookingDto updateBookingStatus(Long bookingId, Long ownerId, boolean approved)
+    ResponseEntity<Map<String, Object>> updateBookingStatus(Long bookingId, Long ownerId, boolean approved)
             throws NotFoundException, AccessDeniedException;
 
     BookingDto getBookingById(Long bookingId, Long userId)
