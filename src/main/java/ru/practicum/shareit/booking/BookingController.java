@@ -42,23 +42,23 @@ public class BookingController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookingDto> getBooking(@PathVariable Long id,
-                                                 @RequestHeader("X-Sharer-User-Id") Long userId) throws AccessDeniedException {
-        BookingDto booking = bookingService.getBookingById(id, userId);
-        return ResponseEntity.ok(booking);
+    public ResponseEntity<Map<String, Object>> getBooking(@PathVariable Long id,
+                                                          @RequestHeader("X-Sharer-User-Id") Long userId) throws AccessDeniedException {
+        return bookingService.getBookingById(id, userId);
     }
 
     @GetMapping
-    public List<BookingDto> getUserBookings(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                            @RequestParam(defaultValue = "ALL") String state) {
+    public ResponseEntity<List<Map<String, Object>>> getUserBookings(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                                                     @RequestParam(defaultValue = "ALL") String state) {
         return bookingService.getUserBookings(userId, state);
     }
 
     @GetMapping("/owner")
-    public List<BookingDto> getOwnerBookings(@RequestHeader("X-Sharer-User-Id") Long ownerId,
-                                             @RequestParam(defaultValue = "ALL") String state) {
+    public ResponseEntity<List<Map<String, Object>>> getOwnerBookings(@RequestHeader("X-Sharer-User-Id") Long ownerId,
+                                                                      @RequestParam(defaultValue = "ALL") String state) {
         return bookingService.getOwnerBookings(ownerId, state);
     }
+
 }
 
 

@@ -15,6 +15,7 @@ import ru.practicum.shareit.user.UserService;
 
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,24 +102,44 @@ public class BookingServiceImpl implements BookingService {
 
 
     @Override
-    public BookingDto getBookingById(Long bookingId, Long userId) {
+    public ResponseEntity<Map<String, Object>> getBookingById(Long bookingId, Long userId) {
         Booking booking = bookingRepository.findById(bookingId)
                                            .orElseThrow(() -> new NotFoundException("Booking not found"));
 
-        return toDto(booking);
+        return ResponseEntity.ok(toResponse(booking));
     }
 
     @Override
-    public List<BookingDto> getUserBookings(Long userId, String state) {
+    public ResponseEntity<List<Map<String, Object>>> getUserBookings(Long userId, String state) {
         List<Booking> bookings = filterBookingsByState(bookingRepository.findAllByBookerId(userId), state);
-        return bookings.stream().map(this::toDto).toList();
+
+        List<Map<String, Object>> responseList = bookings.stream()
+                                                         .map(this::toResponse)
+                                                         .toList();
+        return ResponseEntity.ok(responseList);
     }
 
     @Override
-    public List<BookingDto> getOwnerBookings(Long ownerId, String state) {
-        List<Booking> bookings = filterBookingsByState(bookingRepository.findAllByItemOwnerId(ownerId), state);
-        return bookings.stream().map(this::toDto).toList();
+    public ResponseEntity<List<Map<String, Object>>> getOwnerBookings(Long ownerId, String state) {
+        try {
+            // Получаем бронирования владельца
+            List<Booking> bookings = filterBookingsByState(bookingRepository.findAllByItemOwnerId(ownerId), state);
+            if (bookings.isEmpty()) {
+                throw new NotFoundException("No bookings found for owner with id " + ownerId);
+            }
+
+            List<Map<String, Object>> responseList = bookings.stream()
+                                                             .map(this::toResponse)
+                                                             .toList();
+            return ResponseEntity.ok(responseList);
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.singletonList(Map.of("error", e.getMessage())));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonList(Map.of("error", e.getMessage())));
+        }
     }
+
+
 
     public BookingDto toDto(Booking booking) {
         Item item = itemService.getItemEntityById(booking.getItem().getId()); // Берем Item по itemId

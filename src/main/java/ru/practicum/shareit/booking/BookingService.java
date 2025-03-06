@@ -15,12 +15,13 @@ public interface BookingService {
     ResponseEntity<Map<String, Object>> updateBookingStatus(Long bookingId, Long ownerId, boolean approved)
             throws NotFoundException, AccessDeniedException;
 
-    BookingDto getBookingById(Long bookingId, Long userId)
+    ResponseEntity<Map<String, Object>> getBookingById(Long bookingId, Long userId)
             throws NotFoundException, AccessDeniedException;
 
-    List<BookingDto> getUserBookings(Long userId, String state);
+    ResponseEntity<List<Map<String, Object>>> getUserBookings(Long userId, String state);
 
-    List<BookingDto> getOwnerBookings(Long ownerId, String state);
+    ResponseEntity<List<Map<String, Object>>> getOwnerBookings(Long ownerId, String state);
+
 }
 
 
