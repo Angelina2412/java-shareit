@@ -22,8 +22,8 @@ public class ItemDto {
     @NotNull(message = "Доступность должна быть указана")
     private Boolean available;
 
-    private LocalDateTime lastBookingStartDate;
-    private LocalDateTime nextBookingStartDate;
+    private LocalDateTime lastBooking;
+    private LocalDateTime nextBooking;
 
     private List<CommentDto> comments;
 
@@ -31,14 +31,14 @@ public class ItemDto {
 
     }
 
-    public ItemDto(Long id, String name, String description, Boolean available, LocalDateTime lastBookingStartDate,
-                   LocalDateTime nextBookingStartDate, List<CommentDto> comments) {
+    public ItemDto(Long id, String name, String description, Boolean available, LocalDateTime lastBooking,
+                   LocalDateTime nextBooking, List<CommentDto> comments) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.available = available;
-        this.lastBookingStartDate = lastBookingStartDate;
-        this.nextBookingStartDate = nextBookingStartDate;
+        this.lastBooking = lastBooking;
+        this.nextBooking = nextBooking;
         this.comments = comments;
     }
 }

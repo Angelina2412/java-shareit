@@ -20,7 +20,7 @@ public interface ItemService {
 
     List<ItemDto> getAllItemsWithBookingsByOwner(Long ownerId);
 
-    CommentDto addComment(Long itemId, Long userId, String text) throws AccessDeniedException;
+    CommentDto addComment(Long itemId, Long userId, CommentDto commentDto) throws AccessDeniedException;
 
     List<CommentDto> getCommentsByItemId(Long itemId);
 

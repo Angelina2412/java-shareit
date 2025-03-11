@@ -10,13 +10,10 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
-import ru.practicum.shareit.user.UserServiceImpl;
 
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -83,7 +80,7 @@ public class ItemServiceImpl implements ItemService {
     public ItemDto getItemById(Long itemId) {
         Item item = itemRepository.findById(itemId)
                                   .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
-        return toItemDto(item);
+        return toItemDtoWithBookings(item);
     }
 
     @Override
@@ -111,7 +108,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public CommentDto addComment(Long itemId, Long userId, String text) throws AccessDeniedException {
+    public CommentDto addComment(Long itemId, Long userId, CommentDto commentDto) throws AccessDeniedException {
         Item item = itemRepository.findById(itemId)
                                   .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
         User user = userRepository.findById(userId)
@@ -119,14 +116,15 @@ public class ItemServiceImpl implements ItemService {
 
         boolean hasBooked = bookingRepository.existsByItemIdAndBookerIdAndEndBefore(itemId, userId, LocalDateTime.now());
         if (!hasBooked) {
-            throw new AccessDeniedException("Вы не можете оставить отзыв, если не арендовали эту вещь.");
+            throw new BadRequestException("Вы не можете оставить отзыв, если не арендовали эту вещь.");
         }
 
-        Comment comment = new Comment(item, user, text);
+        Comment comment = new Comment(item, user, commentDto.getText());
         comment = commentRepository.save(comment);
 
         return toCommentDto(comment);
     }
+
 
     @Override
     public List<CommentDto> getCommentsByItemId(Long itemId) {
@@ -139,31 +137,31 @@ public class ItemServiceImpl implements ItemService {
         dto.setId(comment.getId());
         dto.setText(comment.getText());
         dto.setUserId(comment.getUser().getId());
-        dto.setUserName(comment.getUser().getName());
-        dto.setCreatedDate(comment.getCreatedDate());
+        dto.setAuthorName(comment.getUser().getName());
+        dto.setCreated(comment.getCreatedDate());
         return dto;
     }
 
     private ItemDto toItemDtoWithBookings(Item item) {
         ItemDto dto = toItemDto(item);
-        List<Booking> bookings = bookingRepository.findAllByItemId(item.getId());
 
-        if (bookings != null && !bookings.isEmpty()) {
-            bookings.sort(Comparator.comparing(Booking::getStart));
+        Booking lastBooking = bookingRepository.findLastBooking(item.getId());
+        Booking nextBooking = bookingRepository.findNextBooking(item.getId());
 
-            Booking lastBooking = bookings.get(bookings.size() - 1);
-            dto.setLastBookingStartDate(lastBooking.getStart());
-
-            for (Booking booking : bookings) {
-                if (booking.getStart().isAfter(LocalDateTime.now())) {
-                    dto.setNextBookingStartDate(booking.getStart());
-                    break;
-                }
-            }
+        if (lastBooking != null) {
+            dto.setLastBooking(lastBooking.getStart());
         }
+
+        if (nextBooking != null) {
+            dto.setNextBooking(nextBooking.getStart());
+        }
+
+        List<Comment> comments = commentRepository.findByItemId(item.getId());
+        dto.setComments(comments.stream().map(this::toCommentDto).collect(Collectors.toList()));
 
         return dto;
     }
+
 
     private ItemDto toItemDto(Item item) {
         ItemDto dto = new ItemDto();

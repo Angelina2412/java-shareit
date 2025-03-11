@@ -50,11 +50,13 @@ public class ItemController {
     }
 
     @PostMapping("/{itemId}/comment")
-    public CommentDto addComment(@RequestHeader(USER_ID_HEADER) Long userId,
-                                 @PathVariable Long itemId,
-                                 @RequestBody String text) throws AccessDeniedException {
-        return itemService.addComment(itemId, userId, text);
+    public CommentDto addComment(
+            @PathVariable Long itemId,
+            @RequestHeader("X-Sharer-User-Id") Long userId,
+            @RequestBody CommentDto commentDto) throws AccessDeniedException {
+        return itemService.addComment(itemId, userId, commentDto);
     }
+
 
     @GetMapping("/{itemId}")
     public ItemDto getItemById(@PathVariable Long itemId) {

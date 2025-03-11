@@ -9,15 +9,15 @@ public class CommentDto {
     private Long id;
     private String text;
     private Long userId;
-    private String userName;
-    private LocalDateTime createdDate;
+    private String authorName;
+    private LocalDateTime created;
 
-    public CommentDto(Long id, String text, Long userId, String userName, LocalDateTime createdDate) {
+    public CommentDto(Long id, String text, Long userId, String authorName, LocalDateTime created) {
         this.id = id;
         this.text = text;
         this.userId = userId;
-        this.userName = userName;
-        this.createdDate = createdDate;
+        this.authorName = authorName;
+        this.created = created;
     }
 
     public CommentDto(){
