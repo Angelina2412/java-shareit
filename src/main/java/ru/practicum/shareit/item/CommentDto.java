@@ -12,4 +12,15 @@ public class CommentDto {
     private String userName;
     private LocalDateTime createdDate;
 
+    public CommentDto(Long id, String text, Long userId, String userName, LocalDateTime createdDate) {
+        this.id = id;
+        this.text = text;
+        this.userId = userId;
+        this.userName = userName;
+        this.createdDate = createdDate;
+    }
+
+    public CommentDto(){
+
+    }
 }

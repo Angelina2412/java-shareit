@@ -34,11 +34,6 @@ public class ItemController {
         return itemService.updateItem(ownerId, itemId, itemDto);
     }
 
-//    @GetMapping("/{itemId}")
-//    public ItemDto getItemById(@PathVariable Long itemId) {
-//        return itemService.getItemById(itemId);
-//    }
-
     @GetMapping
     public List<ItemDto> getAllItemsByOwner(@RequestHeader(USER_ID_HEADER) Long ownerId) {
         List<ItemDto> items = itemService.getAllItemsByOwner(ownerId);

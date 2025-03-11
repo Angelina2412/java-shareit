@@ -32,6 +32,10 @@ public class Comment {
 
     private LocalDateTime createdDate;
 
+    public Comment() {
+
+    }
+
     public Comment(Item item, User user, String text) {
         this.item = item;
         this.user = user;

@@ -41,6 +41,11 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalArgumentException("Item с таким id не найден");
         }
 
+        // Проверяем, доступен ли предмет для бронирования
+        if (!item.isAvailable()) {
+            throw new IllegalStateException("Этот предмет сейчас недоступен для бронирования");
+        }
+
         // Проверка: дата начала не может быть в прошлом
         if (bookingDto.getStart().isBefore(LocalDateTime.now())) {
             Map<String, Object> errorResponse = new HashMap<>();
@@ -66,6 +71,7 @@ public class BookingServiceImpl implements BookingService {
 
         return ResponseEntity.ok(toResponse(savedBooking));
     }
+
     @Override
     public ResponseEntity<Map<String, Object>> updateBookingStatus(Long bookingId, Long ownerId, boolean approved)
             throws AccessDeniedException {
