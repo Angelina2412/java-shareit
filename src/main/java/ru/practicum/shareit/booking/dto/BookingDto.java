@@ -4,14 +4,13 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.item.dto.BookerDto;
-import ru.practicum.shareit.item.dto.ItemDto;
 
 import java.time.LocalDateTime;
 @Data
 public class BookingDto {
 
     private Long id;
-    private Long itemId; // Замените itemId на item
+    private Long itemId;
     private BookerDto booker;
     @NotNull(message = "Дата начала бронирования не может быть пустой")
     private LocalDateTime start;
@@ -19,7 +18,6 @@ public class BookingDto {
     private LocalDateTime end;
     private BookingStatus status;
 
-    // Конструктор по умолчанию
     public BookingDto() {
     }
 

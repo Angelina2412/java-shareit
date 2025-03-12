@@ -89,14 +89,20 @@ public class ItemServiceImpl implements ItemService {
         return items.stream().map(this::toItemDto).collect(Collectors.toList());
     }
 
-    @Override
     public List<ItemDto> searchItems(String text) {
-        if (text == null || text.trim().isEmpty()) {
+        if (text == null || text.isBlank()) {
             return Collections.emptyList();
         }
-        List<Item> items = itemRepository.findByNameContainingOrDescriptionContainingAndAvailableTrue(text, text);
-        return items.stream().map(this::toItemDto).collect(Collectors.toList());
+
+        List<Item> items = itemRepository.findByNameContainingIgnoreCaseAndAvailableTrue(text);
+
+        return items.stream()
+                    .map(this::toItemDto)
+                    .collect(Collectors.toList());
     }
+
+
+
 
     @Override
     public List<ItemDto> getAllItemsWithBookingsByOwner(Long ownerId) {
