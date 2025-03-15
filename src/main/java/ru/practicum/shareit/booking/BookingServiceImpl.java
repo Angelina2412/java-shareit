@@ -70,12 +70,6 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public ResponseEntity<Map<String, Object>> updateBookingStatus(Long bookingId, Long ownerId, boolean approved)
             throws AccessDeniedException {
-        if (bookingId == null) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("message", "ID бронирования не может быть null");
-            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-        }
-
         Booking booking = bookingRepository.findById(bookingId)
                                            .orElseThrow(() -> new NotFoundException("Booking not found"));
 
@@ -83,16 +77,8 @@ public class BookingServiceImpl implements BookingService {
             throw new AccessDeniedException("You are not authorized to change the status of this booking");
         }
 
-        if (approved != true && approved != false) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("message", "Статус бронирования должен быть APPROVED или REJECTED");
-            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-        }
-
         booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
-        Booking updatedBooking = bookingRepository.save(booking);
-
-        return ResponseEntity.ok(toResponse(updatedBooking));
+        return ResponseEntity.ok(toResponse(bookingRepository.save(booking)));
     }
 
 
@@ -100,24 +86,21 @@ public class BookingServiceImpl implements BookingService {
     public ResponseEntity<Map<String, Object>> getBookingById(Long bookingId, Long userId) {
         Booking booking = bookingRepository.findById(bookingId)
                                            .orElseThrow(() -> new NotFoundException("Booking not found"));
-
         return ResponseEntity.ok(toResponse(booking));
     }
 
     @Override
     public ResponseEntity<List<Map<String, Object>>> getUserBookings(Long userId, String state) {
-        List<Booking> bookings = filterBookingsByState(bookingRepository.findAllByBookerId(userId), state);
-
-        List<Map<String, Object>> responseList = bookings.stream()
-                                                         .map(this::toResponse)
-                                                         .toList();
-        return ResponseEntity.ok(responseList);
+        return ResponseEntity.ok(
+                filterBookingsByState(bookingRepository.findAllByBookerId(userId), state).stream()
+                                                                                         .map(this::toResponse)
+                                                                                         .toList()
+        );
     }
 
     @Override
     public ResponseEntity<List<Map<String, Object>>> getOwnerBookings(Long ownerId, String state) {
         try {
-            // Получаем бронирования владельца
             List<Booking> bookings = filterBookingsByState(bookingRepository.findAllByItemOwnerId(ownerId), state);
             if (bookings.isEmpty()) {
                 throw new NotFoundException("No bookings found for owner with id " + ownerId);
@@ -137,46 +120,29 @@ public class BookingServiceImpl implements BookingService {
     private List<Booking> filterBookingsByState(List<Booking> bookings, String state) {
         LocalDateTime now = LocalDateTime.now();
         return switch (state) {
-            case "CURRENT" -> bookings.stream()
-                                      .filter(b -> b.getStart().isBefore(now) && b.getEnd().isAfter(now))
-                                      .toList();
-            case "PAST" -> bookings.stream()
-                                   .filter(b -> b.getEnd().isBefore(now))
-                                   .toList();
-            case "FUTURE" -> bookings.stream()
-                                     .filter(b -> b.getStart().isAfter(now))
-                                     .toList();
-            case "WAITING" -> bookings.stream()
-                                      .filter(b -> b.getStatus() == BookingStatus.WAITING)
-                                      .toList();
-            case "REJECTED" -> bookings.stream()
-                                       .filter(b -> b.getStatus() == BookingStatus.REJECTED)
-                                       .toList();
+            case "CURRENT" -> bookings.stream().filter(b -> b.getStart().isBefore(now) && b.getEnd().isAfter(now)).toList();
+            case "PAST" -> bookings.stream().filter(b -> b.getEnd().isBefore(now)).toList();
+            case "FUTURE" -> bookings.stream().filter(b -> b.getStart().isAfter(now)).toList();
+            case "WAITING" -> bookings.stream().filter(b -> b.getStatus() == BookingStatus.WAITING).toList();
+            case "REJECTED" -> bookings.stream().filter(b -> b.getStatus() == BookingStatus.REJECTED).toList();
             default -> bookings;
         };
     }
 
-    public Map<String, Object> toResponse(Booking booking) {
-        Item item = itemService.getItemEntityById(booking.getItem().getId(), booking.getBooker().getId()); // Загружаем item
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", booking.getId());
-        response.put("start", booking.getStart());
-        response.put("end", booking.getEnd());
-        response.put("status", booking.getStatus());
-
-        Map<String, Object> itemMap = new HashMap<>();
-        itemMap.put("id", item.getId());
-        itemMap.put("name", item.getName());
-
-        response.put("item", itemMap);
-
-        Map<String, Object> bookerMap = new HashMap<>();
-        bookerMap.put("id", booking.getBooker().getId());
-
-        response.put("booker", bookerMap);
-
-        return response;
+    private Map<String, Object> toResponse(Booking booking) {
+        return Map.of(
+                "id", booking.getId(),
+                "start", booking.getStart(),
+                "end", booking.getEnd(),
+                "status", booking.getStatus(),
+                "item", Map.of(
+                        "id", booking.getItem().getId(),
+                        "name", booking.getItem().getName()
+                ),
+                "booker", Map.of(
+                        "id", booking.getBooker().getId()
+                )
+        );
     }
 }
 
