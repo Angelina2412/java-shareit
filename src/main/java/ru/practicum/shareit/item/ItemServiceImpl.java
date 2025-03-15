@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
-import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.exceptions.BadRequestException;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -22,6 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class ItemServiceImpl implements ItemService {
+
     private static final Logger log = LoggerFactory.getLogger(ItemServiceImpl.class);
 
 
@@ -32,7 +32,8 @@ public class ItemServiceImpl implements ItemService {
     private final CommentRepository commentRepository;
 
 
-    public ItemServiceImpl(ItemRepository itemRepository, UserRepository userRepository, BookingRepository bookingRepository, CommentRepository commentRepository) {
+    public ItemServiceImpl(ItemRepository itemRepository, UserRepository userRepository, BookingRepository bookingRepository,
+                           CommentRepository commentRepository) {
         this.itemRepository = itemRepository;
         this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
@@ -41,8 +42,8 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto addItem(Long ownerId, ItemDto itemDto) {
-        User user = userRepository.findById(ownerId)
-                                  .orElseThrow(() -> new NotFoundException("Пользователь с ID " + ownerId + " не найден."));
+        userRepository.findById(ownerId)
+                      .orElseThrow(() -> new NotFoundException("Пользователь с id " + ownerId + " не найден."));
 
         if (itemDto.getAvailable() == null) {
             throw new BadRequestException("Поле 'доступность' должно быть указано.");
@@ -61,7 +62,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto updateItem(Long ownerId, Long itemId, ItemDto itemDto) throws AccessDeniedException {
         Item item = itemRepository.findById(itemId)
-                                  .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
+                                  .orElseThrow(() -> new NotFoundException("Item с id " + itemId + " не найден."));
 
         if (!item.getOwnerId().equals(ownerId)) {
             throw new AccessDeniedException("Вы не являетесь владельцем этого Item.");
@@ -83,19 +84,12 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto getItemById(Long itemId, Long userId) {
-        log.info("Fetching item with ID: {}", itemId);
-
         Item item = itemRepository.findById(itemId)
                                   .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
-
-        log.info("Found item: {}", item);
-
         ItemDto itemDto = toItemDtoWithBookings(item, userId);
-        log.info("ItemDto response: {}", itemDto);
 
         return itemDto;
     }
-
 
     @Override
     public List<ItemDto> getAllItemsByOwner(Long ownerId) {
@@ -116,8 +110,6 @@ public class ItemServiceImpl implements ItemService {
     }
 
 
-
-
     @Override
     public List<ItemDto> getAllItemsWithBookingsByOwner(Long ownerId) {
         List<Item> items = itemRepository.findByOwnerId(ownerId);
@@ -129,7 +121,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public CommentDto addComment(Long itemId, Long userId, CommentDto commentDto) throws AccessDeniedException {
+    public CommentDto addComment(Long itemId, Long userId, CommentDto commentDto) {
         Item item = itemRepository.findById(itemId)
                                   .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
         User user = userRepository.findById(userId)
@@ -145,7 +137,6 @@ public class ItemServiceImpl implements ItemService {
 
         return toCommentDto(comment);
     }
-
 
     @Override
     public List<CommentDto> getCommentsByItemId(Long itemId) {
@@ -167,7 +158,6 @@ public class ItemServiceImpl implements ItemService {
         ItemDto dto = toItemDto(item);
         LocalDateTime now = LocalDateTime.now();
 
-        // Проверяем, является ли текущий пользователь владельцем вещи
         boolean isOwner = item.getOwnerId().equals(userId);
 
         if (isOwner) {
@@ -186,14 +176,8 @@ public class ItemServiceImpl implements ItemService {
         List<Comment> comments = commentRepository.findByItemId(item.getId());
         dto.setComments(comments.stream().map(this::toCommentDto).collect(Collectors.toList()));
 
-        log.info("ItemDto after mapping: {}", dto);
-
         return dto;
     }
-
-
-
-
 
     private ItemDto toItemDto(Item item) {
         ItemDto dto = new ItemDto();
@@ -205,8 +189,8 @@ public class ItemServiceImpl implements ItemService {
     }
 
     public Item getItemEntityById(Long itemId, Long userId) {
-        ItemDto itemDto = getItemById(itemId, userId); // Передаем userId
-        return toEntity(itemDto); // Конвертируем в Item
+        ItemDto itemDto = getItemById(itemId, userId);
+        return toEntity(itemDto);
     }
 
     private Item toEntity(ItemDto itemDto) {
@@ -217,5 +201,4 @@ public class ItemServiceImpl implements ItemService {
         item.setAvailable(itemDto.getAvailable());
         return item;
     }
-
 }

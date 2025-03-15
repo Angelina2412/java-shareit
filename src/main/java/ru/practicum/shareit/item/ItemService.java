@@ -8,6 +8,7 @@ import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 public interface ItemService {
+
     ItemDto addItem(Long ownerId, ItemDto itemDto) throws BadRequestException;
 
     ItemDto updateItem(Long ownerId, Long itemId, ItemDto itemDto) throws BadRequestException, AccessDeniedException;

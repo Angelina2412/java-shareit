@@ -42,5 +42,4 @@ public class Comment {
         this.text = text;
         this.createdDate = LocalDateTime.now();
     }
-
 }
