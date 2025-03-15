@@ -71,13 +71,19 @@ public class BookingServiceImpl implements BookingService {
     public ResponseEntity<Map<String, Object>> updateBookingStatus(Long bookingId, Long ownerId, boolean approved)
             throws AccessDeniedException {
         Booking booking = bookingRepository.findById(bookingId)
-                                           .orElseThrow(() -> new NotFoundException("Booking not found"));
+                                           .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
 
         if (!booking.getItem().getOwnerId().equals(ownerId)) {
-            throw new AccessDeniedException("You are not authorized to change the status of this booking");
+            throw new AccessDeniedException("Нет доступа поменять статус бронирования");
         }
 
-        booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
+        BookingStatus status;
+        if (approved) {
+            status = BookingStatus.APPROVED;
+        } else {
+            status = BookingStatus.REJECTED;
+        }
+        booking.setStatus(status);
         return ResponseEntity.ok(toResponse(bookingRepository.save(booking)));
     }
 
@@ -85,7 +91,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public ResponseEntity<Map<String, Object>> getBookingById(Long bookingId, Long userId) {
         Booking booking = bookingRepository.findById(bookingId)
-                                           .orElseThrow(() -> new NotFoundException("Booking not found"));
+                                           .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
         return ResponseEntity.ok(toResponse(booking));
     }
 
@@ -103,7 +109,7 @@ public class BookingServiceImpl implements BookingService {
         try {
             List<Booking> bookings = filterBookingsByState(bookingRepository.findAllByItemOwnerId(ownerId), state);
             if (bookings.isEmpty()) {
-                throw new NotFoundException("No bookings found for owner with id " + ownerId);
+                throw new NotFoundException("Нет бронирований для пользователя с id " + ownerId);
             }
 
             List<Map<String, Object>> responseList = bookings.stream()
