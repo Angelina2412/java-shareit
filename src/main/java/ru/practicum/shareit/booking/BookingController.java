@@ -30,13 +30,14 @@ public class BookingController {
     @PostMapping
     public ResponseEntity<Map<String, Object>> createBooking(@Valid @RequestBody BookingDto bookingDto,
                                                              @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return bookingService.addBooking(userId, bookingDto);  // Получаем ResponseEntity из сервиса
+        return bookingService.addBooking(userId, bookingDto);
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<Map<String, Object>> updateBookingStatus(@PathVariable Long id,
                                                                    @RequestParam boolean approved,
-                                                                   @RequestHeader("X-Sharer-User-Id") Long ownerId) throws AccessDeniedException {
+                                                                   @RequestHeader("X-Sharer-User-Id") Long ownerId)
+            throws AccessDeniedException {
         return bookingService.updateBookingStatus(id, ownerId, approved);
     }
 
@@ -57,7 +58,6 @@ public class BookingController {
                                                                       @RequestParam(defaultValue = "ALL") String state) {
         return bookingService.getOwnerBookings(ownerId, state);
     }
-
 }
 
 
