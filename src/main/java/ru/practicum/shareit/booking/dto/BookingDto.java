@@ -6,6 +6,7 @@ import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.item.dto.BookerDto;
 
 import java.time.LocalDateTime;
+
 @Data
 public class BookingDto {
 
@@ -19,6 +20,11 @@ public class BookingDto {
     private BookingStatus status;
 
     public BookingDto() {
+    }
+
+    public BookingDto(Long id, Long bookerId) {
+        this.id = id;
+        this.booker = new BookerDto(bookerId);
     }
 
     public BookingDto(Long id, Long itemId, BookerDto booker, LocalDateTime start,

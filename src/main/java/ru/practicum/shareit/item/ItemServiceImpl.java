@@ -1,9 +1,12 @@
 package ru.practicum.shareit.item;
 
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.exceptions.BadRequestException;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -19,6 +22,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class ItemServiceImpl implements ItemService {
+    private static final Logger log = LoggerFactory.getLogger(ItemServiceImpl.class);
+
 
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
@@ -77,11 +82,20 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemDto getItemById(Long itemId) {
+    public ItemDto getItemById(Long itemId, Long userId) {
+        log.info("Fetching item with ID: {}", itemId);
+
         Item item = itemRepository.findById(itemId)
                                   .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
-        return toItemDtoWithBookings(item);
+
+        log.info("Found item: {}", item);
+
+        ItemDto itemDto = toItemDtoWithBookings(item, userId);
+        log.info("ItemDto response: {}", itemDto);
+
+        return itemDto;
     }
+
 
     @Override
     public List<ItemDto> getAllItemsByOwner(Long ownerId) {
@@ -108,9 +122,10 @@ public class ItemServiceImpl implements ItemService {
     public List<ItemDto> getAllItemsWithBookingsByOwner(Long ownerId) {
         List<Item> items = itemRepository.findByOwnerId(ownerId);
         return items.stream()
-                    .map(this::toItemDtoWithBookings)
+                    .map(item -> toItemDtoWithBookings(item, ownerId))
                     .collect(Collectors.toList());
     }
+
 
     @Override
     @Transactional
@@ -148,25 +163,36 @@ public class ItemServiceImpl implements ItemService {
         return dto;
     }
 
-    private ItemDto toItemDtoWithBookings(Item item) {
+    private ItemDto toItemDtoWithBookings(Item item, Long userId) {
         ItemDto dto = toItemDto(item);
+        LocalDateTime now = LocalDateTime.now();
 
-        Booking lastBooking = bookingRepository.findLastBooking(item.getId());
-        Booking nextBooking = bookingRepository.findNextBooking(item.getId());
+        // Проверяем, является ли текущий пользователь владельцем вещи
+        boolean isOwner = item.getOwnerId().equals(userId);
 
-        if (lastBooking != null) {
-            dto.setLastBooking(lastBooking.getStart());
-        }
+        if (isOwner) {
+            Booking lastBooking = bookingRepository.findLastBooking(item.getId(), now);
+            Booking nextBooking = bookingRepository.findNextBooking(item.getId(), now);
 
-        if (nextBooking != null) {
-            dto.setNextBooking(nextBooking.getStart());
+            if (lastBooking != null) {
+                dto.setLastBooking(lastBooking.getStart());
+            }
+
+            if (nextBooking != null) {
+                dto.setNextBooking(nextBooking.getStart());
+            }
         }
 
         List<Comment> comments = commentRepository.findByItemId(item.getId());
         dto.setComments(comments.stream().map(this::toCommentDto).collect(Collectors.toList()));
 
+        log.info("ItemDto after mapping: {}", dto);
+
         return dto;
     }
+
+
+
 
 
     private ItemDto toItemDto(Item item) {
@@ -178,8 +204,8 @@ public class ItemServiceImpl implements ItemService {
         return dto;
     }
 
-    public Item getItemEntityById(Long itemId) {
-        ItemDto itemDto = getItemById(itemId); // Получаем ItemDto
+    public Item getItemEntityById(Long itemId, Long userId) {
+        ItemDto itemDto = getItemById(itemId, userId); // Передаем userId
         return toEntity(itemDto); // Конвертируем в Item
     }
 

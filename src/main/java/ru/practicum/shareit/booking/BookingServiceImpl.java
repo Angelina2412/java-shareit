@@ -7,8 +7,6 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.ItemService;
-import ru.practicum.shareit.item.dto.BookerDto;
-import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserService;
@@ -35,25 +33,22 @@ public class BookingServiceImpl implements BookingService {
         }
 
         User booker = userService.getUserById(userId);
-        Item item = itemService.getItemEntityById(bookingDto.getItemId());
+        Item item = itemService.getItemEntityById(bookingDto.getItemId(), userId);
 
         if (item == null) {
             throw new IllegalArgumentException("Item с таким id не найден");
         }
 
-        // Проверяем, доступен ли предмет для бронирования
         if (!item.isAvailable()) {
             throw new IllegalStateException("Этот предмет сейчас недоступен для бронирования");
         }
 
-        // Проверка: дата начала не может быть в прошлом
         if (bookingDto.getStart().isBefore(LocalDateTime.now())) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("message", "Дата начала бронирования не может быть в прошлом");
             return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
         }
 
-        // Проверка: дата начала не может быть равна дате окончания
         if (bookingDto.getStart().isEqual(bookingDto.getEnd())) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("message", "Дата начала бронирования не может быть равна дате окончания");
@@ -75,34 +70,28 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public ResponseEntity<Map<String, Object>> updateBookingStatus(Long bookingId, Long ownerId, boolean approved)
             throws AccessDeniedException {
-        // Проверка: BookingId не может быть null
         if (bookingId == null) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("message", "ID бронирования не может быть null");
             return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
         }
 
-        // Находим бронирование по ID
         Booking booking = bookingRepository.findById(bookingId)
                                            .orElseThrow(() -> new NotFoundException("Booking not found"));
 
-        // Проверка на права владельца. Статус может изменить только владелец предмета
         if (!booking.getItem().getOwnerId().equals(ownerId)) {
             throw new AccessDeniedException("You are not authorized to change the status of this booking");
         }
 
-        // Проверка: статус может быть изменен только на APPROVED или REJECTED
         if (approved != true && approved != false) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("message", "Статус бронирования должен быть APPROVED или REJECTED");
             return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
         }
 
-        // Обновляем статус бронирования
         booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
         Booking updatedBooking = bookingRepository.save(booking);
 
-        // Возвращаем ответ с полным объектом item
         return ResponseEntity.ok(toResponse(updatedBooking));
     }
 
@@ -145,21 +134,6 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-
-
-    public BookingDto toDto(Booking booking) {
-        Item item = itemService.getItemEntityById(booking.getItem().getId()); // Берем Item по itemId
-
-        return new BookingDto(
-                booking.getId(),
-                booking.getItem().getId(), // Оставляем itemId
-                new BookerDto(booking.getBooker().getId()),
-                booking.getStart(),
-                booking.getEnd(),
-                booking.getStatus()
-        );
-    }
-
     private List<Booking> filterBookingsByState(List<Booking> bookings, String state) {
         LocalDateTime now = LocalDateTime.now();
         return switch (state) {
@@ -178,12 +152,12 @@ public class BookingServiceImpl implements BookingService {
             case "REJECTED" -> bookings.stream()
                                        .filter(b -> b.getStatus() == BookingStatus.REJECTED)
                                        .toList();
-            default -> bookings; // "ALL"
+            default -> bookings;
         };
     }
 
     public Map<String, Object> toResponse(Booking booking) {
-        Item item = itemService.getItemEntityById(booking.getItem().getId()); // Загружаем item
+        Item item = itemService.getItemEntityById(booking.getItem().getId(), booking.getBooker().getId()); // Загружаем item
 
         Map<String, Object> response = new HashMap<>();
         response.put("id", booking.getId());

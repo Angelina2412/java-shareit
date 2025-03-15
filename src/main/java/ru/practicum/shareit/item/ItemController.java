@@ -59,11 +59,11 @@ public class ItemController {
 
 
     @GetMapping("/{itemId}")
-    public ItemDto getItemById(@PathVariable Long itemId) {
-        ItemDto itemDto = itemService.getItemById(itemId);
+    public ItemDto getItemById(@PathVariable Long itemId,
+                               @RequestHeader("X-Sharer-User-Id") Long userId) {
+        ItemDto itemDto = itemService.getItemById(itemId, userId);
         List<CommentDto> comments = itemService.getCommentsByItemId(itemId);
         itemDto.setComments(comments);
         return itemDto;
     }
-
 }

@@ -1,7 +1,6 @@
 package ru.practicum.shareit.booking;
 
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -38,7 +37,7 @@ public class BookingController {
     public ResponseEntity<Map<String, Object>> updateBookingStatus(@PathVariable Long id,
                                                                    @RequestParam boolean approved,
                                                                    @RequestHeader("X-Sharer-User-Id") Long ownerId) throws AccessDeniedException {
-        return bookingService.updateBookingStatus(id, ownerId, approved);  // Получаем ResponseEntity с обновленным бронированием
+        return bookingService.updateBookingStatus(id, ownerId, approved);
     }
 
     @GetMapping("/{id}")

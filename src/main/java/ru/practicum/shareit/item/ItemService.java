@@ -12,7 +12,7 @@ public interface ItemService {
 
     ItemDto updateItem(Long ownerId, Long itemId, ItemDto itemDto) throws BadRequestException, AccessDeniedException;
 
-    ItemDto getItemById(Long itemId);
+    ItemDto getItemById(Long itemId, Long userId);
 
     List<ItemDto> getAllItemsByOwner(Long ownerId);
 
@@ -24,5 +24,5 @@ public interface ItemService {
 
     List<CommentDto> getCommentsByItemId(Long itemId);
 
-    Item getItemEntityById(Long itemId);
+    Item getItemEntityById(Long itemId, Long userId);
 }
