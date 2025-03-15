@@ -11,6 +11,7 @@ import java.util.List;
 
 @Data
 public class ItemDto {
+
     private Long id;
 
     @NotBlank(message = "Имя не может быть пустым")
@@ -27,7 +28,7 @@ public class ItemDto {
 
     private List<CommentDto> comments;
 
-    public ItemDto(){
+    public ItemDto() {
 
     }
 
