@@ -1,8 +1,6 @@
 package ru.practicum.shareit.item;
 
 import jakarta.transaction.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
@@ -21,9 +19,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class ItemServiceImpl implements ItemService {
-
-    private static final Logger log = LoggerFactory.getLogger(ItemServiceImpl.class);
-
 
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
@@ -83,7 +78,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto getItemById(Long itemId, Long userId) {
         Item item = itemRepository.findById(itemId)
-                                  .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
+                .orElseThrow(() -> new NotFoundException("Item с ID " + itemId + " не найден."));
         ItemDto itemDto = toItemDtoWithBookings(item, userId);
 
         return itemDto;
@@ -103,8 +98,8 @@ public class ItemServiceImpl implements ItemService {
         List<Item> items = itemRepository.findByNameContainingIgnoreCaseAndAvailableTrue(text);
 
         return items.stream()
-                    .map(this::toItemDto)
-                    .collect(Collectors.toList());
+                .map(this::toItemDto)
+                .collect(Collectors.toList());
     }
 
     @Override

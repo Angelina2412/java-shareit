@@ -99,7 +99,8 @@ public class BookingServiceImpl implements BookingService {
     private List<Booking> filterBookingsByState(List<Booking> bookings, String state) {
         LocalDateTime now = LocalDateTime.now();
         return switch (state) {
-            case "CURRENT" -> bookings.stream().filter(b -> b.getStart().isBefore(now) && b.getEnd().isAfter(now)).toList();
+            case "CURRENT" ->
+                    bookings.stream().filter(b -> b.getStart().isBefore(now) && b.getEnd().isAfter(now)).toList();
             case "PAST" -> bookings.stream().filter(b -> b.getEnd().isBefore(now)).toList();
             case "FUTURE" -> bookings.stream().filter(b -> b.getStart().isAfter(now)).toList();
             case "WAITING" -> bookings.stream().filter(b -> b.getStatus() == BookingStatus.WAITING).toList();

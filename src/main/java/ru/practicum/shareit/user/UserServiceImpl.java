@@ -52,7 +52,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User getUserById(Long id) {
         return userRepository.findById(id)
-                             .orElseThrow(() -> new NotFoundException("User с ID " + id + " не найден"));
+                .orElseThrow(() -> new NotFoundException("User с ID " + id + " не найден"));
     }
 
     @Override
@@ -72,7 +72,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean emailExists(String email) {
         return userRepository.findByEmail(email)
-                             .isPresent();
+                .isPresent();
     }
 
     @Override
