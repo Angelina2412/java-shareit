@@ -38,7 +38,7 @@ public class ItemController {
     @PatchMapping("/{itemId}")
     public ItemDto updateItem(@RequestHeader(USER_ID_HEADER) Long ownerId,
                               @PathVariable Long itemId,
-                              @RequestBody ItemDto itemDto) throws AccessDeniedException, BadRequestException {
+                              @RequestBody ItemDto itemDto) {
         return itemService.updateItem(ownerId, itemId, itemDto);
     }
 
@@ -61,7 +61,7 @@ public class ItemController {
     public CommentDto addComment(
             @PathVariable Long itemId,
             @RequestHeader("X-Sharer-User-Id") Long userId,
-            @RequestBody CommentDto commentDto) throws AccessDeniedException {
+            @RequestBody CommentDto commentDto) {
         return itemService.addComment(itemId, userId, commentDto);
     }
 

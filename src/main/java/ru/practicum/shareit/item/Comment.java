@@ -6,7 +6,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 
@@ -14,6 +16,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Data
+@NoArgsConstructor
 public class Comment {
 
     @Id
@@ -31,10 +34,6 @@ public class Comment {
     private String text;
 
     private LocalDateTime createdDate;
-
-    public Comment() {
-
-    }
 
     public Comment(Item item, User user, String text) {
         this.item = item;

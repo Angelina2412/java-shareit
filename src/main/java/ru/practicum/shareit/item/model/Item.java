@@ -1,12 +1,8 @@
 package ru.practicum.shareit.item.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
+import ru.practicum.shareit.user.User;
 
 @Data
 @Entity
@@ -26,7 +22,8 @@ public class Item {
     @Column(name = "available", nullable = false)
     private boolean available;
 
-    @Column(name = "owner_id", nullable = false)
-    private Long ownerId;
-
+    @ManyToOne
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;
 }
+

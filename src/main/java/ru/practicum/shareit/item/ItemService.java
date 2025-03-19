@@ -4,14 +4,13 @@ import org.apache.coyote.BadRequestException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 public interface ItemService {
 
     ItemDto addItem(Long ownerId, ItemDto itemDto) throws BadRequestException;
 
-    ItemDto updateItem(Long ownerId, Long itemId, ItemDto itemDto) throws BadRequestException, AccessDeniedException;
+    ItemDto updateItem(Long ownerId, Long itemId, ItemDto itemDto);
 
     ItemDto getItemById(Long itemId, Long userId);
 
@@ -19,9 +18,7 @@ public interface ItemService {
 
     List<ItemDto> searchItems(String text);
 
-    List<ItemDto> getAllItemsWithBookingsByOwner(Long ownerId);
-
-    CommentDto addComment(Long itemId, Long userId, CommentDto commentDto) throws AccessDeniedException;
+    CommentDto addComment(Long itemId, Long userId, CommentDto commentDto);
 
     List<CommentDto> getCommentsByItemId(Long itemId);
 
