@@ -7,6 +7,8 @@ import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.exceptions.ForbiddenException;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.ItemService;
+import ru.practicum.shareit.item.dto.BookerDto;
+import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserService;
@@ -87,9 +89,12 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public List<BookingResponseDto> getOwnerBookings(Long ownerId, String state) {
+        userService.getUserById(ownerId);
+
         List<Booking> bookings = filterBookingsByState(bookingRepository.findAllByItemOwnerId(ownerId), state);
         return bookings.stream().map(this::toResponse).collect(Collectors.toList());
     }
+
 
     private List<Booking> filterBookingsByState(List<Booking> bookings, String state) {
         LocalDateTime now = LocalDateTime.now();
@@ -109,10 +114,10 @@ public class BookingServiceImpl implements BookingService {
                 booking.getStart(),
                 booking.getEnd(),
                 booking.getStatus(),
-                booking.getItem().getId(),
-                booking.getItem().getName(),
-                booking.getBooker().getId()
+                new ItemDto(booking.getItem().getId(), booking.getItem().getName()),
+                new BookerDto(booking.getBooker().getId())
         );
     }
+
 }
 

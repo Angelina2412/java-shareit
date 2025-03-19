@@ -31,5 +31,10 @@ public class ItemDto {
     private LocalDateTime nextBooking;
 
     private List<CommentDto> comments;
+
+    public ItemDto(Long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
 }
 
