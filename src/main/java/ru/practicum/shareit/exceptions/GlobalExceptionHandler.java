@@ -8,8 +8,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.nio.file.AccessDeniedException;
-
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -33,11 +31,11 @@ public class GlobalExceptionHandler {
         return new ErrorResponse("Not found", ex.getMessage());
     }
 
-    @ExceptionHandler(AccessDeniedException.class)
+    @ExceptionHandler(ForbiddenException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ErrorResponse handleAccessDeniedException(AccessDeniedException ex) {
-        logger.error("Access denied: {}", ex.getMessage());
-        return new ErrorResponse("Access denied", ex.getMessage());
+    public ErrorResponse handleForbiddenException(ForbiddenException ex) {
+        logger.error("Forbidden: {}", ex.getMessage());
+        return new ErrorResponse("Forbidden", ex.getMessage());
     }
 
     @ExceptionHandler(ConflictException.class)
