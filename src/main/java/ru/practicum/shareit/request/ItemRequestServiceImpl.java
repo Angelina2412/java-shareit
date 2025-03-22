@@ -3,6 +3,7 @@ package ru.practicum.shareit.request;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exceptions.NotFoundException;
@@ -13,8 +14,6 @@ import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.dto.ItemResponseDto;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
-
-import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -53,15 +52,12 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     @Override
     public Page<ItemDto> getAllRequests(Long userId, int from, int size) {
         getUserOrThrow(userId);
-
-        // Вычисление номера страницы
         int page = from / size;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("created").descending());
 
         Page<Item> itemsPage = itemRepository.findAllExcludingUser(userId, pageable);
 
-        // Преобразуем страницу Item в страницу ItemDto
         return itemsPage.map(this::toItemDto);
     }
 

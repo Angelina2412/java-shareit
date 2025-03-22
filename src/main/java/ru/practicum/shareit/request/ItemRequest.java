@@ -23,23 +23,20 @@ public class ItemRequest {
     private Long id;
 
     @Column(nullable = false)
-    private String description; // Текст запроса
+    private String description;
 
     @ManyToOne
     @JoinColumn(name = "requester_id", nullable = false)
-    private User requester; // Пользователь, который сделал запрос
+    private User requester;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime created; // Дата и время создания запроса
+    private LocalDateTime created;
+    @OneToMany(mappedBy = "itemRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Item> items = new ArrayList<>();
 
-    // Важно автоматически задавать время создания
     @PrePersist
     public void prePersist() {
         created = LocalDateTime.now();
     }
-
-    // Связь с вещами, которые могут быть предложены в ответ на запрос
-    @OneToMany(mappedBy = "itemRequest", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Item> items = new ArrayList<>();
 }
 
