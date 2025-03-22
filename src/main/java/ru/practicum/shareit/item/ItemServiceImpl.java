@@ -9,6 +9,8 @@ import ru.practicum.shareit.exceptions.ForbiddenException;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
@@ -25,18 +27,22 @@ public class ItemServiceImpl implements ItemService {
 
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
+    private final ItemRequestRepository itemRequestRepository;
+
+
 
 
     public ItemServiceImpl(ItemRepository itemRepository, UserRepository userRepository, BookingRepository bookingRepository,
-                           CommentRepository commentRepository) {
+                           CommentRepository commentRepository, ItemRequestRepository itemRequestRepository) {
         this.itemRepository = itemRepository;
         this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
         this.commentRepository = commentRepository;
+        this.itemRequestRepository = itemRequestRepository;
     }
 
     @Override
-    public ItemDto addItem(Long ownerId, ItemDto itemDto) {
+    public ItemDto addItem(Long ownerId, ItemDto itemDto) throws BadRequestException {
         User owner = userRepository.findById(ownerId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + ownerId + " не найден."));
 
@@ -47,9 +53,16 @@ public class ItemServiceImpl implements ItemService {
         Item item = ItemMapper.toEntity(itemDto);
         item.setOwner(owner);
 
+        if (itemDto.getRequestId() != null) {
+            ItemRequest itemRequest = itemRequestRepository.findById(itemDto.getRequestId())
+                    .orElseThrow(() -> new NotFoundException("Запрос с id " + itemDto.getRequestId() + " не найден."));
+            item.setItemRequest(itemRequest);
+        }
+
         item = itemRepository.save(item);
         return ItemMapper.toItemDto(item);
     }
+
 
 
     @Override
