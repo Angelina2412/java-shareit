@@ -34,6 +34,7 @@ public class Item {
     @ManyToOne
     @JoinColumn(name = "item_request_id")
     private ItemRequest itemRequest;
+
     public Item(String name, String description, boolean available, User owner) {
         this.name = name;
         this.description = description;
