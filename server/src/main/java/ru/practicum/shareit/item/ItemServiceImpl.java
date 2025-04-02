@@ -30,8 +30,6 @@ public class ItemServiceImpl implements ItemService {
     private final ItemRequestRepository itemRequestRepository;
 
 
-
-
     public ItemServiceImpl(ItemRepository itemRepository, UserRepository userRepository, BookingRepository bookingRepository,
                            CommentRepository commentRepository, ItemRequestRepository itemRequestRepository) {
         this.itemRepository = itemRepository;
@@ -50,6 +48,10 @@ public class ItemServiceImpl implements ItemService {
             throw new BadRequestException("Поле 'доступность' должно быть указано.");
         }
 
+        if (itemDto.getName() == null || itemDto.getName().isEmpty()) {
+            throw new BadRequestException("Поле 'name' не может быть пустым.");
+        }
+
         Item item = ItemMapper.toEntity(itemDto);
         item.setOwner(owner);
 
@@ -62,8 +64,6 @@ public class ItemServiceImpl implements ItemService {
         item = itemRepository.save(item);
         return ItemMapper.toItemDto(item);
     }
-
-
 
     @Override
     public ItemDto updateItem(Long ownerId, Long itemId, ItemDto itemDto) {

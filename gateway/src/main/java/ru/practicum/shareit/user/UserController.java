@@ -45,10 +45,9 @@ public class UserController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody UserDto userUpdates, @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return userClient.updateUser(id, userUpdates, userId);
+    public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody UserDto userUpdates) {
+        return userClient.updateUser(id, userUpdates);
     }
-
 }
 
 

@@ -20,7 +20,7 @@ public class ItemDto {
     private Long id;
     @NotBlank(message = "Имя не может быть пустым")
     private String name;
-    @NotBlank(message = "Описание не может быть пустым")
+    @NotNull(message = "Описание не может быть пустым")
     private String description;
     @NotNull(message = "Доступность должна быть указана")
     private Boolean available;

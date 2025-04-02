@@ -2,7 +2,6 @@ package ru.practicum.shareit.item;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import ru.practicum.shareit.client.BaseClient;
 import ru.practicum.shareit.item.dto.ItemDto;
 
@@ -35,9 +34,9 @@ public class ItemClient {
         return baseClient.get(url, null, null);
     }
 
-    public ResponseEntity<Object> getItemById(Long itemId) {
+    public ResponseEntity<Object> getItemById(Long userId, Long itemId) {
         String url = String.format("%s/%d", API_PREFIX, itemId);
-        return baseClient.get(url, null, null);
+        return baseClient.get(url, userId, null);
     }
 
     public ResponseEntity<Object> addComment(Long itemId, Long userId, CommentDto commentDto) {

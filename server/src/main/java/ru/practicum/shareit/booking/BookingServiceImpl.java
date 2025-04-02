@@ -35,7 +35,7 @@ public class BookingServiceImpl implements BookingService {
         Item item = itemService.getItemEntityById(bookingDto.getItemId(), userId);
 
         if (item == null) {
-            throw new IllegalArgumentException("Item с таким id не найден");
+            throw new NotFoundException("Item с id " + bookingDto.getItemId() + " не найден");
         }
 
         if (!item.isAvailable()) {

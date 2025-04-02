@@ -1,34 +1,49 @@
 package ru.practicum.shareit.client;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.*;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+import ru.practicum.shareit.exception.GlobalExceptionHandler;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 @Component
 public class BaseClient {
-    protected final RestTemplate rest;
     private static final String BASE_URL = "http://localhost:9090";
+    protected final RestTemplate rest;
+
 
     public BaseClient(RestTemplate rest) {
         this.rest = rest;
+    }
+
+    private static ResponseEntity<Object> prepareGatewayResponse(ResponseEntity<Object> response) {
+        if (response.getStatusCode().is2xxSuccessful()) {
+            return response;
+        }
+
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.status(response.getStatusCode());
+
+        if (response.hasBody()) {
+            return responseBuilder.body(response.getBody());
+        }
+
+        return responseBuilder.build();
     }
 
     protected ResponseEntity<Object> get(String path) {
         return get(path, null, null);
     }
 
-    protected ResponseEntity<Object> get(String path, long userId) {
+    public ResponseEntity<Object> get(String path, long userId) {
         return get(path, userId, null);
     }
 
@@ -56,7 +71,7 @@ public class BaseClient {
         return makeAndSendRequest(HttpMethod.PUT, path, userId, parameters, body);
     }
 
-    protected <T> ResponseEntity<Object> patch(String path, T body) {
+    public <T> ResponseEntity<Object> patch(String path, T body) {
         return patch(path, null, null, body);
     }
 
@@ -64,7 +79,7 @@ public class BaseClient {
         return patch(path, userId, null, null);
     }
 
-    protected <T> ResponseEntity<Object> patch(String path, long userId, T body) {
+    public <T> ResponseEntity<Object> patch(String path, long userId, T body) {
         return patch(path, userId, null, body);
     }
 
@@ -84,7 +99,9 @@ public class BaseClient {
         return makeAndSendRequest(HttpMethod.DELETE, path, userId, parameters, null);
     }
 
-    private <T> ResponseEntity<Object> makeAndSendRequest(HttpMethod method, String path, Long userId, @Nullable Map<String, Object> parameters, @Nullable T body) {
+    private <T> ResponseEntity<Object> makeAndSendRequest(HttpMethod method, String path, Long userId,
+                                                          @Nullable Map<String, Object> parameters,
+                                                          @Nullable T body) {
         String fullUrl = BASE_URL + path;
 
         HttpEntity<T> requestEntity = new HttpEntity<>(body, defaultHeaders(userId));
@@ -97,7 +114,14 @@ public class BaseClient {
                 shareitServerResponse = rest.exchange(fullUrl, method, requestEntity, Object.class);
             }
         } catch (HttpStatusCodeException e) {
-            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsByteArray());
+            ObjectMapper objectMapper = new ObjectMapper();
+            try {
+                Map<String, Object> errorBody = objectMapper.readValue(e.getResponseBodyAsByteArray(), new TypeReference<>() {
+                });
+                return ResponseEntity.status(e.getStatusCode()).body(errorBody);
+            } catch (Exception jsonException) {
+                return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", "Ошибка обработки JSON", "details", e.getMessage()));
+            }
         }
         return prepareGatewayResponse(shareitServerResponse);
     }
@@ -112,25 +136,12 @@ public class BaseClient {
         return headers;
     }
 
-    private static ResponseEntity<Object> prepareGatewayResponse(ResponseEntity<Object> response) {
-        if (response.getStatusCode().is2xxSuccessful()) {
-            return response;
-        }
-
-        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.status(response.getStatusCode());
-
-        if (response.hasBody()) {
-            return responseBuilder.body(response.getBody());
-        }
-
-        return responseBuilder.build();
-    }
-
     public <T> List<T> getList(String path, Long userId) {
         ResponseEntity<Object> response = get(path, userId);
         if (response.getBody() instanceof List<?>) {
             ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.convertValue(response.getBody(), new TypeReference<List<T>>() {});
+            return objectMapper.convertValue(response.getBody(), new TypeReference<List<T>>() {
+            });
         }
         return Collections.emptyList();
     }

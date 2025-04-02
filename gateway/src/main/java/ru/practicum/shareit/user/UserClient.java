@@ -31,7 +31,6 @@ public class UserClient {
         }
     }
 
-
     public ResponseEntity<UserDto> getUser(Long id) {
         String url = String.format("%s/%d", API_PREFIX, id);
         ResponseEntity<Object> response = baseClient.get(url, null, null);
@@ -62,10 +61,14 @@ public class UserClient {
         return ResponseEntity.noContent().build();
     }
 
-    public ResponseEntity<UserDto> updateUser(Long id, UserDto userUpdates, long userId) {
+    public ResponseEntity<UserDto> updateUser(Long id, UserDto userUpdates) {
         String url = String.format("%s/%d", API_PREFIX, id);
-        baseClient.put(url, userId, null, userUpdates);  // Передаем userId
-        return ResponseEntity.ok(userUpdates);
+        ResponseEntity<Object> response = baseClient.patch(url, id, userUpdates);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        UserDto updatedUser = objectMapper.convertValue(response.getBody(), UserDto.class);
+
+        return ResponseEntity.ok(updatedUser);
     }
 
 }

@@ -1,5 +1,6 @@
 package ru.practicum.shareit.item;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +24,7 @@ public class ItemController {
     }
 
     @PostMapping
-    public ResponseEntity<Object> addItem(@RequestHeader(USER_ID_HEADER) Long ownerId, @RequestBody ItemDto itemDto) {
+    public ResponseEntity<Object> addItem(@RequestHeader(USER_ID_HEADER) Long ownerId, @Valid @RequestBody ItemDto itemDto) {
         return itemClient.addItem(ownerId, itemDto);
     }
 
@@ -54,6 +55,6 @@ public class ItemController {
     @GetMapping("/{itemId}")
     public ResponseEntity<Object> getItemById(@PathVariable Long itemId,
                                               @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return itemClient.getItemById(itemId);
+        return itemClient.getItemById(userId, itemId);
     }
 }
