@@ -14,7 +14,9 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
     List<Item> findByOwnerId(Long ownerId);
 
     List<Item> findByNameContainingIgnoreCaseAndAvailableTrue(String name);
+
     List<Item> findByItemRequest_Id(Long requestId);
+
     @Query("SELECT i FROM Item i WHERE i.owner.id <> :userId")
     Page<Item> findAllExcludingUser(@Param("userId") Long userId, Pageable pageable);
 }
