@@ -3,7 +3,6 @@ package ru.practicum.shareit.item;
 import org.apache.coyote.BadRequestException;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.user.UserServiceImpl;
 
 import java.util.List;
 
@@ -13,11 +12,9 @@ public class ItemController {
 
     private static final String USER_ID_HEADER = "X-Sharer-User-Id";
     private final ItemService itemService;
-    private final UserServiceImpl userService;
 
-    public ItemController(ItemService itemService, UserServiceImpl userService) {
+    public ItemController(ItemService itemService) {
         this.itemService = itemService;
-        this.userService = userService;
     }
 
     @PostMapping
