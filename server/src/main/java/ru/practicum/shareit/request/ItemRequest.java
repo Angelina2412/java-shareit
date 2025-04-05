@@ -38,5 +38,11 @@ public class ItemRequest {
     public void prePersist() {
         created = LocalDateTime.now();
     }
+
+    public ItemRequest(String description, User requester) {
+        this.description = description;
+        this.requester = requester;
+        this.created = LocalDateTime.now();
+    }
 }
 

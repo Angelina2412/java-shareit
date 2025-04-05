@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.ItemRepository;
@@ -54,8 +53,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         getUserOrThrow(userId);
         int page = from / size;
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("created").descending());
-
+        Pageable pageable = PageRequest.of(page, size);
         Page<Item> itemsPage = itemRepository.findAllExcludingUser(userId, pageable);
 
         return itemsPage.map(this::toItemDto);
@@ -75,7 +73,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден."));
     }
 
-    private ItemRequestDto toItemRequestDto(ItemRequest request) {
+    public ItemRequestDto toItemRequestDto(ItemRequest request) {
         return new ItemRequestDto(
                 request.getId(),
                 request.getDescription(),
@@ -86,7 +84,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         );
     }
 
-    private ItemDto toItemDto(Item item) {
+    public ItemDto toItemDto(Item item) {
         ItemDto dto = new ItemDto();
         dto.setId(item.getId());
         dto.setName(item.getName());

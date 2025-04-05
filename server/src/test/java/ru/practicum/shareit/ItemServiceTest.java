@@ -10,22 +10,30 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.exceptions.BadRequestException;
 import ru.practicum.shareit.exceptions.ForbiddenException;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.Comment;
 import ru.practicum.shareit.item.CommentDto;
+import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.ItemService;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @Transactional
@@ -36,6 +44,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class ItemServiceTest {
     private final EntityManager em;
     private final ItemService itemService;
+    private final UserRepository userRepository;
+
+    private final BookingRepository bookingRepository;
+    private final ItemRepository itemRepository;
+    private final ItemRequestRepository itemRequestRepository;
+
 
     @Test
     void addItem_ShouldSaveItem() throws BadRequestException {
@@ -200,5 +214,228 @@ public class ItemServiceTest {
         assertThat(comments.size(), is(1));
         assertThat(comments.get(0).getText(), is("Great item!"));
     }
+
+    @Test
+    void addItem_ShouldThrowException_WhenNameIsEmpty() {
+        User user = new User(null, "test_user", "user@example.com");
+        em.persist(user);
+
+        ItemDto itemDto = new ItemDto(null, "", "Description", true, null);
+
+        assertThrows(BadRequestException.class, () -> itemService.addItem(user.getId(), itemDto));
+    }
+
+    @Test
+    void updateItem_ShouldThrowException_WhenOwnerNotFound() {
+        ItemDto itemDto = new ItemDto(1L, "New Name", "New Description", true, null);
+
+        assertThrows(NotFoundException.class, () -> itemService.updateItem(999L, 1L, itemDto));
+    }
+
+    @Test
+    void addComment_ShouldThrowException_WhenCommentTextIsEmpty() {
+        User user = new User(null, "test_user", "user@example.com");
+        em.persist(user);
+
+        Item item = new Item("Item Name", "Item Description", true, user);
+        em.persist(item);
+
+        CommentDto commentDto = new CommentDto("");
+
+        assertThrows(BadRequestException.class, () -> itemService.addComment(item.getId(), user.getId(), commentDto));
+    }
+
+    @Test
+    void updateItem_ShouldUpdateOnlyName_WhenOnlyNameProvided() throws NotFoundException, ForbiddenException {
+        User user = new User(null, "test_user", "user@example.com");
+        em.persist(user);
+
+        Item item = new Item("Old Name", "Old Description", true, user);
+        em.persist(item);
+
+        ItemDto itemDto = new ItemDto(item.getId(), "New Name", null, null, null);
+        ItemDto updatedItem = itemService.updateItem(user.getId(), item.getId(), itemDto);
+
+        assertThat(updatedItem.getName(), is("New Name"));
+        assertThat(updatedItem.getDescription(), is("Old Description")); // Должно остаться неизменным
+        assertThat(updatedItem.getAvailable(), is(true)); // Должно остаться неизменным
+    }
+
+    @Test
+    void updateItem_ShouldUpdateOnlyDescription_WhenOnlyDescriptionProvided() throws NotFoundException, ForbiddenException {
+        User user = new User(null, "test_user", "user@example.com");
+        em.persist(user);
+
+        Item item = new Item("Old Name", "Old Description", true, user);
+        em.persist(item);
+
+        ItemDto itemDto = new ItemDto(item.getId(), null, "New Description", null, null);
+        ItemDto updatedItem = itemService.updateItem(user.getId(), item.getId(), itemDto);
+
+        assertThat(updatedItem.getName(), is("Old Name")); // Должно остаться неизменным
+        assertThat(updatedItem.getDescription(), is("New Description"));
+        assertThat(updatedItem.getAvailable(), is(true)); // Должно остаться неизменным
+    }
+
+    @Test
+    void updateItem_ShouldUpdateOnlyAvailability_WhenOnlyAvailabilityProvided() throws NotFoundException, ForbiddenException {
+        User user = new User(null, "test_user", "user@example.com");
+        em.persist(user);
+
+        Item item = new Item("Old Name", "Old Description", true, user);
+        em.persist(item);
+
+        ItemDto itemDto = new ItemDto(item.getId(), null, null, false, null);
+        ItemDto updatedItem = itemService.updateItem(user.getId(), item.getId(), itemDto);
+
+        assertThat(updatedItem.getName(), is("Old Name")); // Должно остаться неизменным
+        assertThat(updatedItem.getDescription(), is("Old Description")); // Должно остаться неизменным
+        assertThat(updatedItem.getAvailable(), is(false)); // Должно измениться
+    }
+
+    @Test
+    void updateItem_ShouldNotChangeAnything_WhenAllFieldsAreNull() throws NotFoundException, ForbiddenException {
+        User user = new User(null, "test_user", "user@example.com");
+        em.persist(user);
+
+        Item item = new Item("Old Name", "Old Description", true, user);
+        em.persist(item);
+
+        ItemDto itemDto = new ItemDto(item.getId(), null, null, null, null);
+        ItemDto updatedItem = itemService.updateItem(user.getId(), item.getId(), itemDto);
+
+        assertThat(updatedItem.getName(), is("Old Name"));
+        assertThat(updatedItem.getDescription(), is("Old Description"));
+        assertThat(updatedItem.getAvailable(), is(true));
+    }
+    @Test
+    void updateItem_ShouldUpdateWithEmptyStrings() throws NotFoundException, ForbiddenException {
+        User user = new User(null, "test_user", "user@example.com");
+        em.persist(user);
+
+        Item item = new Item("Old Name", "Old Description", true, user);
+        em.persist(item);
+
+        ItemDto itemDto = new ItemDto(item.getId(), "", "", null, null);
+        ItemDto updatedItem = itemService.updateItem(user.getId(), item.getId(), itemDto);
+
+        assertThat(updatedItem.getName(), is(""));
+        assertThat(updatedItem.getDescription(), is(""));
+    }
+
+    @Test
+    void updateItem_ShouldNotSave_WhenNoChangesMade() throws NotFoundException, ForbiddenException {
+        User user = new User(null, "test_user", "user@example.com");
+        em.persist(user);
+
+        Item item = new Item("Old Name", "Old Description", true, user);
+        em.persist(item);
+
+        ItemDto itemDto = new ItemDto(item.getId(), "Old Name", "Old Description", true, null);
+
+        ItemDto updatedItem = itemService.updateItem(user.getId(), item.getId(), itemDto);
+
+        assertThat(updatedItem.getName(), is("Old Name"));
+        assertThat(updatedItem.getDescription(), is("Old Description"));
+        assertThat(updatedItem.getAvailable(), is(true));
+    }
+
+    @Test
+    void searchItems_ShouldReturnEmptyList_WhenTextIsNull() {
+        List<ItemDto> items = itemService.searchItems(null);
+
+        assertThat(items, is(notNullValue()));
+        assertThat(items.size(), is(0));
+    }
+
+    @Test
+    void searchItems_ShouldReturnEmptyList_WhenTextIsBlank() {
+        List<ItemDto> items = itemService.searchItems("   ");
+
+        assertThat(items, is(notNullValue()));
+        assertThat(items.size(), is(0));
+    }
+    @Test
+    void shouldThrowBadRequestExceptionWhenAvailableIsNull() {
+        User owner = userRepository.save(new User(null, "First", "john@google.com"));
+        Long ownerId = owner.getId();
+
+        ItemDto itemDto = new ItemDto();
+        itemDto.setName("Test item");
+        itemDto.setDescription("Test description");
+        itemDto.setAvailable(null);
+        itemDto.setRequestId(null);
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->
+                itemService.addItem(ownerId, itemDto)
+        );
+
+        assertEquals("Поле 'доступность' должно быть указано.", exception.getMessage());
+    }
+
+    @Test
+    @Transactional
+    void getItemById_shouldSetLastAndNextBooking_whenUserIsOwner() {
+        User owner = userRepository.save(new User(null, "Owner", "owner@example.com"));
+        Item item = new Item();
+        item.setName("Дрель");
+        item.setDescription("Ударная");
+        item.setAvailable(true);
+        item.setOwner(owner);
+        item = itemRepository.save(item);
+
+        User booker = userRepository.save(new User(null, "Booker", "booker@example.com"));
+
+        Booking pastBooking = new Booking();
+        pastBooking.setItem(item);
+        pastBooking.setBooker(booker);
+        pastBooking.setStart(LocalDateTime.now().minusDays(5));
+        pastBooking.setEnd(LocalDateTime.now().minusDays(1));
+        pastBooking.setStatus(BookingStatus.APPROVED);
+        bookingRepository.save(pastBooking);
+
+        Booking futureBooking = new Booking();
+        futureBooking.setItem(item);
+        futureBooking.setBooker(booker);
+        futureBooking.setStart(LocalDateTime.now().plusDays(1));
+        futureBooking.setEnd(LocalDateTime.now().plusDays(3));
+        futureBooking.setStatus(BookingStatus.APPROVED);
+        bookingRepository.save(futureBooking);
+
+        ItemDto result = itemService.getItemById(item.getId(), owner.getId());
+
+        assertNotNull(result.getLastBooking(), "lastBooking должен быть установлен");
+        assertNotNull(result.getNextBooking(), "nextBooking должен быть установлен");
+
+        assertEquals(pastBooking.getStart(), result.getLastBooking());
+        assertEquals(futureBooking.getStart(), result.getNextBooking());
+    }
+
+    @Test
+    @Transactional
+    void addItem_shouldSetItemRequest_whenRequestIdIsProvided() {
+        User owner = userRepository.save(new User(null, "Owner", "owner@example.com"));
+
+        ItemRequest itemRequest = new ItemRequest();
+        itemRequest.setDescription("Нужен инструмент");
+        itemRequest.setRequester(owner);
+        itemRequest = itemRequestRepository.save(itemRequest);
+
+        ItemDto itemDto = new ItemDto();
+        itemDto.setName("Молоток");
+        itemDto.setDescription("Молоток большой");
+        itemDto.setAvailable(true);
+        itemDto.setRequestId(itemRequest.getId());
+
+        ItemDto result = itemService.addItem(owner.getId(), itemDto);
+
+        assertNotNull(result.getId(), "ID вещи должен быть присвоен");
+
+        Item item = itemRepository.findById(result.getId()).orElseThrow();
+        assertNotNull(item.getItemRequest(), "Запрос должен быть привязан к вещи");
+        assertEquals(itemRequest.getId(), item.getItemRequest().getId(), "Запрос должен совпадать");
+    }
 }
+
+
 

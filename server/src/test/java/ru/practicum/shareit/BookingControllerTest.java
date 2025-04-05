@@ -128,4 +128,19 @@ class BookingControllerTest {
                 .andExpect(jsonPath("$[0].id").value(responseDto.getId()))
                 .andExpect(jsonPath("$[0].status").value(responseDto.getStatus().toString()));
     }
+
+    @Test
+    void createBooking_ShouldReturnBadRequest_WhenInvalidDates() throws Exception {
+        BookingDto bookingDto = new BookingDto(null, 1L, null, LocalDateTime.now().plusDays(2), LocalDateTime.now(), null);
+
+        when(bookingService.addBooking(1L, bookingDto))
+                .thenThrow(new IllegalArgumentException("Start must be before end"));
+
+        mockMvc.perform(post("/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Sharer-User-Id", 1L)
+                        .content(objectMapper.writeValueAsString(bookingDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details").value("Start must be before end"));
+    }
 }

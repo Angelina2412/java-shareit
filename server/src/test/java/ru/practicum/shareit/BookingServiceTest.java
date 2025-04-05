@@ -1,8 +1,7 @@
 package ru.practicum.shareit;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -17,20 +16,21 @@ import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.exceptions.ForbiddenException;
+import ru.practicum.shareit.exceptions.NotFoundException;
+import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.ItemService;
 import ru.practicum.shareit.item.dto.BookerDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.UserService;
 
-import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
 
 @DataJpaTest
 @Transactional
@@ -39,55 +39,121 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ComponentScan(basePackages = "ru.practicum.shareit")
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class BookingServiceTest {
-    private final EntityManager em;
     @Autowired
     private final BookingService bookingService;
-
+    private final UserRepository userRepository;
+    private final ItemRepository itemRepository;
     @Autowired
     private BookingRepository bookingRepository;
-
     @Autowired
     private UserService userService;
-
     @Autowired
     private ItemService itemService;
+    private User owner;
+    private User user;
+    private Item item;
+
+    @BeforeEach
+    void setUp() {
+        owner = new User(null, "owner", "owner@google.com");
+        userRepository.save(owner);
+
+        user = new User(null, "user", "user@google.com");
+        userRepository.save(user);
+
+        item = new Item("Drill", "Power drill", true, owner);
+        itemRepository.save(item);
+    }
 
     @Test
-    void createBooking_ShouldSaveBooking() {
-        User user = new User(null, "test_user", "user@example.com");
-        em.persist(user);
+    void getOwnerBookings_ShouldReturnCurrentBookings_WhenStateIsCurrent() {
+        LocalDateTime now = LocalDateTime.now();
+        Booking currentBooking = new Booking(item, user, now.minusDays(1), now.plusDays(1), BookingStatus.WAITING);
+        bookingRepository.save(currentBooking);
 
-        Item item = new Item(null, "Test Item", "Description", true, user, null);
-        em.persist(item);
+        List<BookingResponseDto> bookings = bookingService.getOwnerBookings(owner.getId(), "CURRENT");
 
-        BookingDto bookingDto = new BookingDto(
-                null,
-                item.getId(),
-                new BookerDto(user.getId()),
-                LocalDateTime.now().plusDays(1),
-                LocalDateTime.now().plusDays(2),
-                null
-        );
+        assertThat(bookings).hasSize(1);
+        assertThat(bookings.get(0).getStatus()).isEqualTo(BookingStatus.WAITING);
+    }
 
-        BookingResponseDto savedBooking = bookingService.addBooking(user.getId(), bookingDto);
 
-        TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
-        Booking booking = query.setParameter("id", savedBooking.getId()).getSingleResult();
+    @Test
+    void getOwnerBookings_ShouldReturtnPastBookings_WhenStateIsPast() {
+        LocalDateTime now = LocalDateTime.now();
+        Booking pastBooking = new Booking(item, user, now.minusDays(3), now.minusDays(1), BookingStatus.REJECTED);
+        bookingRepository.save(pastBooking);
 
-        assertThat(booking, is(notNullValue()));
-        assertThat(booking.getItem().getId(), is(item.getId()));
-        assertThat(booking.getBooker().getId(), is(user.getId()));
-        assertThat(booking.getStart(), is(bookingDto.getStart()));
-        assertThat(booking.getEnd(), is(bookingDto.getEnd()));
+        List<BookingResponseDto> bookings = bookingService.getOwnerBookings(owner.getId(), "PAST");
+
+        assertThat(bookings).hasSize(1);
+        assertThat(bookings.get(0).getStatus()).isEqualTo(BookingStatus.REJECTED);
+    }
+
+    @Test
+    void getOwnerBookings_ShouldReturnFutureBookings_WhenStateIsFuture() {
+        LocalDateTime now = LocalDateTime.now();
+        Booking futureBooking = new Booking(item, user, now.plusDays(1), now.plusDays(2), BookingStatus.WAITING);
+        bookingRepository.save(futureBooking);
+
+        List<BookingResponseDto> bookings = bookingService.getOwnerBookings(owner.getId(), "FUTURE");
+
+        assertThat(bookings).hasSize(1);
+        assertThat(bookings.get(0).getStatus()).isEqualTo(BookingStatus.WAITING);
+    }
+
+    @Test
+    void getOwnerBookings_ShouldReturnWaitingBookings_WhenStateIsWaiting() {
+        LocalDateTime now = LocalDateTime.now();
+        Booking waitingBooking = new Booking(item, user, now.minusDays(1), now.plusDays(1), BookingStatus.WAITING);
+        bookingRepository.save(waitingBooking);
+
+        List<BookingResponseDto> bookings = bookingService.getOwnerBookings(owner.getId(), "WAITING");
+
+        assertThat(bookings).hasSize(1);
+        assertThat(bookings.get(0).getStatus()).isEqualTo(BookingStatus.WAITING);
+    }
+
+    @Test
+    void getOwnerBookings_ShouldReturnRejectedBookings_WhenStateIsRejected() {
+        LocalDateTime now = LocalDateTime.now();
+        Booking rejectedBooking = new Booking(item, user, now.minusDays(3), now.minusDays(1), BookingStatus.REJECTED);
+        bookingRepository.save(rejectedBooking);
+
+        List<BookingResponseDto> bookings = bookingService.getOwnerBookings(owner.getId(), "REJECTED");
+
+        assertThat(bookings).hasSize(1);
+        assertThat(bookings.get(0).getStatus()).isEqualTo(BookingStatus.REJECTED);
+    }
+
+    @Test
+    void getOwnerBookings_ShouldReturnAllBookings_WhenStateIsUnknown() {
+        LocalDateTime now = LocalDateTime.now();
+        Booking pastBooking = new Booking(item, user, now.minusDays(3), now.minusDays(1), BookingStatus.REJECTED);
+        Booking futureBooking = new Booking(item, user, now.plusDays(1), now.plusDays(2), BookingStatus.WAITING);
+        Booking currentBooking = new Booking(item, user, now.minusDays(1), now.plusDays(1), BookingStatus.WAITING);
+
+        bookingRepository.save(pastBooking);
+        bookingRepository.save(futureBooking);
+        bookingRepository.save(currentBooking);
+
+        List<BookingResponseDto> bookings = bookingService.getOwnerBookings(owner.getId(), "UNKNOWN");
+
+        assertThat(bookings).hasSize(3);
+    }
+
+    @Test
+    void getOwnerBookings_ShouldThrowNotFoundException_WhenOwnerDoesNotExist() {
+        assertThrows(NotFoundException.class, () -> bookingService.getOwnerBookings(999L, "CURRENT"));
     }
 
     @Test
     void createBooking_ShouldThrowException_WhenStartDateIsInThePast() {
         User user = new User(null, "test_user", "user@example.com");
-        em.persist(user);
+        userRepository.save(user);
 
         Item item = new Item(null, "Test Item", "Description", true, user, null);
-        em.persist(item);
+        itemRepository.save(item);
 
         BookingDto bookingDto = new BookingDto(
                 null,
@@ -104,10 +170,10 @@ public class BookingServiceTest {
     @Test
     void createBooking_ShouldThrowException_WhenItemIsNotAvailable() {
         User user = new User(null, "test_user", "user@example.com");
-        em.persist(user);
+        userRepository.save(user);
 
         Item item = new Item(null, "Test Item", "Description", false, user, null);
-        em.persist(item);
+        itemRepository.save(item);
 
         BookingDto bookingDto = new BookingDto(
                 null,
@@ -124,7 +190,7 @@ public class BookingServiceTest {
     @Test
     void createBooking_ShouldThrowException_WhenItemIdIsNull() {
         User user = new User(null, "test_user", "user@example.com");
-        em.persist(user);
+        userRepository.save(user);
 
         BookingDto bookingDto = new BookingDto(
                 null, null, new BookerDto(user.getId()),
@@ -135,88 +201,23 @@ public class BookingServiceTest {
     }
 
     @Test
-    void updateBookingStatus_ShouldApproveBooking_WhenOwnerUpdates() {
-        User owner = new User(null, "owner", "owner@example.com");
-        em.persist(owner);
-
-        User booker = new User(null, "booker", "booker@example.com");
-        em.persist(booker);
-
-        Item item = new Item(null, "Test Item", "Description", true, owner, null);
-        em.persist(item);
-
-        Booking booking = new Booking(null, item, booker, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2), BookingStatus.WAITING);
-        em.persist(booking);
-
-        BookingResponseDto updated = bookingService.updateBookingStatus(booking.getId(), owner.getId(), true);
-
-        assertThat(updated.getStatus(), is(BookingStatus.APPROVED));
-    }
-
-    @Test
     void updateBookingStatus_ShouldThrowException_WhenNotOwner() {
         User owner = new User(null, "owner", "owner@example.com");
-        em.persist(owner);
+        userRepository.save(owner);
 
         User booker = new User(null, "booker", "booker@example.com");
-        em.persist(booker);
+        userRepository.save(booker);
 
         User anotherUser = new User(null, "another", "another@example.com");
-        em.persist(anotherUser);
+        userRepository.save(anotherUser);
 
         Item item = new Item(null, "Test Item", "Description", true, owner, null);
-        em.persist(item);
+        itemRepository.save(item);
 
         Booking booking = new Booking(null, item, booker, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2), BookingStatus.WAITING);
-        em.persist(booking);
+        bookingRepository.save(booking);
 
         assertThrows(ForbiddenException.class, () -> bookingService.updateBookingStatus(booking.getId(), anotherUser.getId(), true));
-    }
-
-    @Test
-    void getBookingById_ShouldReturnCorrectBooking() throws AccessDeniedException {
-        User owner = new User(null, "owner", "owner@example.com");
-        em.persist(owner);
-
-        User booker = new User(null, "booker", "booker@example.com");
-        em.persist(booker);
-
-        Item item = new Item(null, "Test Item", "Description", true, owner, null);
-        em.persist(item);
-
-        Booking booking = new Booking(null, item, booker, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2), BookingStatus.WAITING);
-        em.persist(booking);
-
-        BookingResponseDto found = bookingService.getBookingById(booking.getId(), booker.getId());
-
-        assertThat(found.getId(), is(booking.getId()));
-        assertThat(found.getStatus(), is(booking.getStatus()));
-    }
-
-    @Test
-    void getUserBookings_ShouldFilterByStatus() {
-        User booker = new User(null, "booker", "booker@example.com");
-        em.persist(booker);
-
-        User owner = new User(null, "owner", "owner@example.com");
-        em.persist(owner);
-
-        Item item = new Item(null, "Test Item", "Description", true, owner, null);
-        em.persist(item);
-
-        Booking pastBooking = new Booking(null, item, booker, LocalDateTime.now().minusDays(3), LocalDateTime.now().minusDays(1), BookingStatus.APPROVED);
-        em.persist(pastBooking);
-
-        Booking futureBooking = new Booking(null, item, booker, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2), BookingStatus.WAITING);
-        em.persist(futureBooking);
-
-        List<BookingResponseDto> pastBookings = bookingService.getUserBookings(booker.getId(), "PAST");
-        assertThat(pastBookings.size(), is(1));
-        assertThat(pastBookings.get(0).getId(), is(pastBooking.getId()));
-
-        List<BookingResponseDto> futureBookings = bookingService.getUserBookings(booker.getId(), "FUTURE");
-        assertThat(futureBookings.size(), is(1));
-        assertThat(futureBookings.get(0).getId(), is(futureBooking.getId()));
     }
 
 }

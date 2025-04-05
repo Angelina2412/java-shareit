@@ -19,11 +19,4 @@ public class CommentDto {
         this.text = text;
     }
 
-    public CommentDto(Long id, String text, Long userId, String authorName, LocalDateTime created) {
-        this.id = id;
-        this.text = text;
-        this.userId = userId;
-        this.authorName = authorName;
-        this.created = created;
-    }
 }
