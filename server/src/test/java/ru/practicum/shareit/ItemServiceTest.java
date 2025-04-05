@@ -308,6 +308,7 @@ public class ItemServiceTest {
         assertThat(updatedItem.getDescription(), is("Old Description"));
         assertThat(updatedItem.getAvailable(), is(true));
     }
+
     @Test
     void updateItem_ShouldUpdateWithEmptyStrings() throws NotFoundException, ForbiddenException {
         User user = new User(null, "test_user", "user@example.com");
@@ -355,6 +356,7 @@ public class ItemServiceTest {
         assertThat(items, is(notNullValue()));
         assertThat(items.size(), is(0));
     }
+
     @Test
     void shouldThrowBadRequestExceptionWhenAvailableIsNull() {
         User owner = userRepository.save(new User(null, "First", "john@google.com"));
