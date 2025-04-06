@@ -8,9 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.dto.BookingDto;
-import ru.practicum.shareit.booking.dto.BookingResponseDto;
-
-import java.util.List;
 
 @RestController
 @RequestMapping(path = "/bookings")
@@ -25,20 +22,20 @@ public class BookingController {
 
     @PostMapping
     public ResponseEntity<Object> createBooking(@RequestHeader("X-Sharer-User-Id") long userId,
-                                            @RequestBody @Valid BookingDto bookingDto) {
+                                                @RequestBody @Valid BookingDto bookingDto) {
         return bookingClient.createBooking(userId, bookingDto);
     }
 
     @PatchMapping("/{bookingId}")
     public ResponseEntity<Object> updateBookingStatus(@RequestHeader("X-Sharer-User-Id") long ownerId,
-                                                  @PathVariable Long bookingId,
-                                                  @RequestParam boolean approved) {
+                                                      @PathVariable Long bookingId,
+                                                      @RequestParam boolean approved) {
         return bookingClient.updateBookingStatus(bookingId, ownerId, approved);
     }
 
     @GetMapping("/{bookingId}")
     public ResponseEntity<Object> getBooking(@RequestHeader("X-Sharer-User-Id") long userId,
-                                         @PathVariable Long bookingId) {
+                                             @PathVariable Long bookingId) {
         return bookingClient.getBooking(userId, bookingId);
     }
 
