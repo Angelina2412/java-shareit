@@ -9,8 +9,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.user.dto.UserDto;
 
-import java.util.List;
-
 @Controller
 @RequestMapping(path = "/users")
 @Slf4j
@@ -25,27 +23,27 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDto) {
+    public ResponseEntity<Object> createUser(@Valid @RequestBody UserDto userDto) {
         return userClient.createUser(userDto);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserDto> getUser(@PathVariable Long id) {
+    public ResponseEntity<Object> getUser(@PathVariable Long id) {
         return userClient.getUser(id);
     }
 
     @GetMapping
-    public ResponseEntity<List<UserDto>> getAllUsers() {
+    public ResponseEntity<Object> getAllUsers() {
         return userClient.getAllUsers();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Object> deleteUser(@PathVariable Long id) {
         return userClient.deleteUser(id);
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody UserDto userUpdates) {
+    public ResponseEntity<Object> updateUser(@PathVariable Long id, @RequestBody UserDto userUpdates) {
         return userClient.updateUser(id, userUpdates);
     }
 }

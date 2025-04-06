@@ -24,20 +24,20 @@ public class BookingController {
     }
 
     @PostMapping
-    public BookingResponseDto createBooking(@RequestHeader("X-Sharer-User-Id") long userId,
+    public ResponseEntity<Object> createBooking(@RequestHeader("X-Sharer-User-Id") long userId,
                                             @RequestBody @Valid BookingDto bookingDto) {
         return bookingClient.createBooking(userId, bookingDto);
     }
 
     @PatchMapping("/{bookingId}")
-    public BookingResponseDto updateBookingStatus(@RequestHeader("X-Sharer-User-Id") long ownerId,
+    public ResponseEntity<Object> updateBookingStatus(@RequestHeader("X-Sharer-User-Id") long ownerId,
                                                   @PathVariable Long bookingId,
                                                   @RequestParam boolean approved) {
         return bookingClient.updateBookingStatus(bookingId, ownerId, approved);
     }
 
     @GetMapping("/{bookingId}")
-    public BookingResponseDto getBooking(@RequestHeader("X-Sharer-User-Id") long userId,
+    public ResponseEntity<Object> getBooking(@RequestHeader("X-Sharer-User-Id") long userId,
                                          @PathVariable Long bookingId) {
         return bookingClient.getBooking(userId, bookingId);
     }
@@ -47,7 +47,7 @@ public class BookingController {
                                                   @RequestParam(name = "state", defaultValue = "ALL") String state,
                                                   @PositiveOrZero @RequestParam(name = "from", defaultValue = "0") Integer from,
                                                   @Positive @RequestParam(name = "size", defaultValue = "10") Integer size) {
-        List<BookingResponseDto> bookings = bookingClient.getUserBookings(userId, state, from, size);
+        ResponseEntity<Object> bookings = bookingClient.getUserBookings(userId, state, from, size);
         return ResponseEntity.ok(bookings);
     }
 
@@ -56,7 +56,7 @@ public class BookingController {
                                                    @RequestParam(name = "state", defaultValue = "ALL") String state,
                                                    @PositiveOrZero @RequestParam(name = "from", defaultValue = "0") Integer from,
                                                    @Positive @RequestParam(name = "size", defaultValue = "10") Integer size) {
-        List<BookingResponseDto> bookings = bookingClient.getOwnerBookings(ownerId, state, from, size);
+        ResponseEntity<Object> bookings = bookingClient.getOwnerBookings(ownerId, state, from, size);
         return ResponseEntity.ok(bookings);
     }
 

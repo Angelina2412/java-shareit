@@ -1,75 +1,48 @@
 package ru.practicum.shareit.user;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.DefaultUriBuilderFactory;
 import ru.practicum.shareit.client.BaseClient;
 import ru.practicum.shareit.user.dto.UserDto;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Service
-public class UserClient {
+public class UserClient extends BaseClient {
 
     private static final String API_PREFIX = "/users";
-    private final BaseClient baseClient;
 
-    public UserClient(BaseClient baseClient) {
-        this.baseClient = baseClient;
+    @Autowired
+    public UserClient(@Value("${shareit-server.url}") String serverUrl, RestTemplateBuilder builder) {
+        super(
+                builder
+                        .uriTemplateHandler(new DefaultUriBuilderFactory(serverUrl + API_PREFIX))
+                        .requestFactory(() -> new HttpComponentsClientHttpRequestFactory())
+                        .build()
+        );
     }
 
-    public ResponseEntity<UserDto> createUser(UserDto userDto) {
-        ResponseEntity<Object> response = baseClient.post(API_PREFIX, null, null, userDto);
-
-        if (response.getBody() != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            UserDto userResponse = objectMapper.convertValue(response.getBody(), UserDto.class);
-            return ResponseEntity.ok(userResponse);
-        } else {
-            return ResponseEntity.noContent().build();
-        }
+    public ResponseEntity<Object> createUser(UserDto userDto) {
+        return post("", userDto);
     }
 
-    public ResponseEntity<UserDto> getUser(Long id) {
-        String url = String.format("%s/%d", API_PREFIX, id);
-        ResponseEntity<Object> response = baseClient.get(url, null, null);
-        if (response.getBody() != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            UserDto userResponse = objectMapper.convertValue(response.getBody(), UserDto.class);
-            return ResponseEntity.ok(userResponse);
-        } else {
-            return ResponseEntity.noContent().build();
-        }
+    public ResponseEntity<Object> getUser(Long id) {
+        return get("/" + id);
     }
 
-    public ResponseEntity<List<UserDto>> getAllUsers() {
-        List<Object> responseList = baseClient.getList(API_PREFIX, null);
-        ObjectMapper objectMapper = new ObjectMapper();
-        List<UserDto> userDtoList = new ArrayList<>();
-        for (Object obj : responseList) {
-            UserDto userDto = objectMapper.convertValue(obj, UserDto.class);
-            userDtoList.add(userDto);
-        }
-        return ResponseEntity.ok(userDtoList);
+    public ResponseEntity<Object> getAllUsers() {
+        return get("");
     }
 
-
-    public ResponseEntity<Void> deleteUser(Long id) {
-        String url = String.format("%s/%d", API_PREFIX, id);
-        baseClient.delete(url, null, null);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Object> deleteUser(Long id) {
+        return delete("/" + id);
     }
 
-    public ResponseEntity<UserDto> updateUser(Long id, UserDto userUpdates) {
-        String url = String.format("%s/%d", API_PREFIX, id);
-        ResponseEntity<Object> response = baseClient.patch(url, id, userUpdates);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        UserDto updatedUser = objectMapper.convertValue(response.getBody(), UserDto.class);
-
-        return ResponseEntity.ok(updatedUser);
+    public ResponseEntity<Object> updateUser(Long id, UserDto userUpdates) {
+        return patch("/" + id, userUpdates);
     }
-
 }
 
