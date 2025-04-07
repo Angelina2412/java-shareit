@@ -1,6 +1,7 @@
 package ru.practicum.shareit.exceptions;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -60,9 +61,19 @@ public class GlobalExceptionHandler {
         return new ErrorResponse("Conflict", ex.getMessage());
     }
 
-    @ExceptionHandler(Throwable.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ErrorResponse handleAllRemainingExceptions(Throwable ex) {
-        return new ErrorResponse("Internal server error", "Произошла непредвиденная ошибка: " + ex.getMessage());
+//    @ExceptionHandler(Throwable.class)
+//    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+//    public ErrorResponse handleAllRemainingExceptions(Throwable ex) {
+//        return new ErrorResponse("Internal server error", "Произошла непредвиденная ошибка: " + ex.getMessage());
+//    }
+
+    @ExceptionHandler
+    public ResponseEntity<Object> handleException(Throwable e) {
+        e.printStackTrace(); // или logger.error("Ошибка", e)
+        return new ResponseEntity<>(
+                Map.of("message", "Internal server error", "details", "Произошла непредвиденная ошибка: " + e.getMessage()),
+                HttpStatus.INTERNAL_SERVER_ERROR
+        );
     }
+
 }

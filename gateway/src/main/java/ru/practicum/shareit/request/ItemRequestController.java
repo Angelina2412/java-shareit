@@ -24,26 +24,39 @@ public class ItemRequestController {
     @PostMapping
     public ResponseEntity<Object> createRequest(@RequestBody ItemRequestDto requestDto,
                                                 @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return itemRequestClient.createRequest(userId, requestDto);
+        log.info("POST /requests — createRequest called by userId={} with body={}", userId, requestDto);
+        ResponseEntity<Object> response = itemRequestClient.createRequest(userId, requestDto);
+        log.info("POST /requests — response: status={}, body={}", response.getStatusCode(), response.getBody());
+        return response;
     }
 
     @GetMapping
     public ResponseEntity<Object> getUserRequests(@RequestHeader("X-Sharer-User-Id") Long userId) {
-        return itemRequestClient.getUserRequests(userId);
+        log.info("GET /requests — getUserRequests called by userId={}", userId);
+        ResponseEntity<Object> response = itemRequestClient.getUserRequests(userId);
+        log.info("GET /requests — response: status={}, body={}", response.getStatusCode(), response.getBody());
+        return response;
     }
 
     @GetMapping("/all")
     public ResponseEntity<Object> getAllRequests(@RequestHeader("X-Sharer-User-Id") Long userId,
                                                  @RequestParam(defaultValue = "0") int from,
                                                  @RequestParam(defaultValue = "10") int size) {
-        return itemRequestClient.getAllRequests(userId, from, size);
+        log.info("GET /requests/all — getAllRequests called by userId={} with params: from={}, size={}", userId, from, size);
+        ResponseEntity<Object> response = itemRequestClient.getAllRequests(userId, from, size);
+        log.info("GET /requests/all — response: status={}, body={}", response.getStatusCode(), response.getBody());
+        return response;
     }
 
     @GetMapping("/{requestId}")
     public ResponseEntity<Object> getRequestById(@RequestHeader("X-Sharer-User-Id") Long userId,
                                                  @PathVariable Long requestId) {
-        return itemRequestClient.getRequestById(userId, requestId);
+        log.info("GET /requests/{} — getRequestById called by userId={}", requestId, userId);
+        ResponseEntity<Object> response = itemRequestClient.getRequestById(userId, requestId);
+        log.info("GET /requests/{} — response: status={}, body={}", requestId, response.getStatusCode(), response.getBody());
+        return response;
     }
 }
+
 
 
